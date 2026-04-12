@@ -34,13 +34,43 @@ type CookieAccessor = {
   get(name: string): { value: string } | undefined;
 };
 
+function readMetadataString(metadata: Record<string, unknown> | null, key: string): string | null {
+  const value = metadata?.[key];
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function resolveAvatarUrl(user: UserSchema): string | null {
+  const profileAvatar = user.profile?.avatar_url;
+  if (profileAvatar) {
+    return profileAvatar;
+  }
+
+  return (
+    readMetadataString(user.metadata, 'avatar_url') ??
+    readMetadataString(user.metadata, 'avatarUrl') ??
+    readMetadataString(user.metadata, 'picture') ??
+    readMetadataString(user.metadata, 'photo_url') ??
+    readMetadataString(user.metadata, 'photoURL') ??
+    readMetadataString(user.metadata, 'image_url') ??
+    readMetadataString(user.metadata, 'image')
+  );
+}
+
 function asAccountStatus(value: unknown): AccountStatus {
   return value === 'inactive' ? 'inactive' : 'active';
 }
 
 function mapUser(user: UserSchema, profile?: UserProfileRow | null): AuthUser {
+  const resolvedAvatarUrl = resolveAvatarUrl(user);
+  const normalizedProfile = user.profile
+    ? { ...user.profile, avatar_url: user.profile.avatar_url ?? resolvedAvatarUrl ?? undefined }
+    : resolvedAvatarUrl
+      ? { avatar_url: resolvedAvatarUrl }
+      : null;
+
   return {
     ...user,
+    profile: normalizedProfile,
     accountStatus: asAccountStatus(profile?.status),
     lastLoginAt: profile?.last_login_at ?? null,
     displayName: profile?.display_name ?? user.profile?.name ?? null,

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
+import { useI18n } from '@/lib/i18n/client';
 
 type Budget = {
   id: string;
@@ -25,6 +26,7 @@ function currentMonthStart() {
 }
 
 export function BudgetsManager() {
+  const { t } = useI18n();
   const { addToast } = useToast();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -47,9 +49,9 @@ export function BudgetsManager() {
       const [categoriesPayload, budgetsPayload] = await Promise.all([categoriesRes.json(), budgetsRes.json()]);
 
       if (!categoriesRes.ok || !budgetsRes.ok) {
-        const message = categoriesPayload.message ?? budgetsPayload.message ?? 'Failed to load budgets.';
+        const message = categoriesPayload.message ?? budgetsPayload.message ?? t('budgets.loadFailed');
         setError(message);
-        addToast({ title: 'Could not load budgets', description: message, variant: 'error' });
+        addToast({ title: t('budgets.loadErrorTitle'), description: message, variant: 'error' });
         return;
       }
 
@@ -59,10 +61,9 @@ export function BudgetsManager() {
     } finally {
       setIsLoading(false);
     }
-  }, [periodMonth]);
+  }, [addToast, periodMonth, t]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
@@ -71,9 +72,9 @@ export function BudgetsManager() {
 
     const selectedCategoryId = categoryId || expenseCategories[0]?.id;
     if (!selectedCategoryId) {
-      const message = 'Please create an expense category first.';
+      const message = t('budgets.createCategoryFirst');
       setError(message);
-      addToast({ title: 'Category required', description: message, variant: 'error' });
+      addToast({ title: t('budgets.categoryRequiredTitle'), description: message, variant: 'error' });
       return;
     }
 
@@ -85,13 +86,13 @@ export function BudgetsManager() {
 
     const payload = await response.json();
     if (!response.ok) {
-      const message = payload.message ?? 'Failed to save budget.';
+      const message = payload.message ?? t('budgets.saveFailed');
       setError(message);
-      addToast({ title: 'Budget save failed', description: message, variant: 'error' });
+      addToast({ title: t('budgets.saveErrorTitle'), description: message, variant: 'error' });
       return;
     }
 
-    addToast({ title: 'Budget saved', description: 'Your monthly budget has been updated.' });
+    addToast({ title: t('budgets.saveSuccessTitle'), description: t('budgets.saveSuccessText') });
     await load();
   }
 
@@ -99,21 +100,21 @@ export function BudgetsManager() {
     const response = await fetch(`/api/budgets/${id}`, { method: 'DELETE' });
     if (!response.ok) {
       const payload = await response.json();
-      const message = payload.message ?? 'Failed to delete budget.';
+      const message = payload.message ?? t('budgets.deleteFailed');
       setError(message);
-      addToast({ title: 'Budget deletion failed', description: message, variant: 'error' });
+      addToast({ title: t('budgets.deleteErrorTitle'), description: message, variant: 'error' });
       return;
     }
 
-    addToast({ title: 'Budget deleted', description: 'The budget was removed.' });
+    addToast({ title: t('budgets.deleteSuccessTitle'), description: t('budgets.deleteSuccessText') });
     await load();
   }
 
   return (
     <div className='space-y-6'>
-      <form className={`${financeUi.formCard} grid gap-3 md:grid-cols-4`} onSubmit={onSave}>
+      <form className={`${financeUi.formCard} grid gap-3 sm:grid-cols-2 xl:grid-cols-4`} onSubmit={onSave}>
         <div>
-          <label className={financeUi.label}>Month</label>
+          <label className={financeUi.label}>{t('budgets.month')}</label>
           <input
             type='date'
             className={financeUi.input}
@@ -122,7 +123,7 @@ export function BudgetsManager() {
           />
         </div>
         <div>
-          <label className={financeUi.label}>Category</label>
+          <label className={financeUi.label}>{t('budgets.category')}</label>
           <StyledSelect
             value={categoryId || expenseCategories[0]?.id || ''}
             onChange={(event) => setCategoryId(event.target.value)}
@@ -136,7 +137,7 @@ export function BudgetsManager() {
           </StyledSelect>
         </div>
         <div>
-          <label className={financeUi.label}>Limit amount</label>
+          <label className={financeUi.label}>{t('budgets.limitAmount')}</label>
           <input
             type='number'
             step='0.01'
@@ -148,7 +149,7 @@ export function BudgetsManager() {
         </div>
         <div className='flex items-end'>
           <button type='submit' className={`${financeUi.primaryButton} w-full`}>
-            Save budget
+            {t('budgets.save')}
           </button>
         </div>
       </form>
@@ -158,26 +159,30 @@ export function BudgetsManager() {
       {isLoading ? (
         <div className={financeUi.loadingWrap}>
           <span className={financeUi.spinner} />
-          <span>Loading budgets...</span>
+          <span>{t('budgets.loading')}</span>
         </div>
       ) : null}
 
       <div className='space-y-3'>
         {!isLoading && budgets.length === 0 ? (
-          <div className={financeUi.emptyState}>No budgets yet. Create a monthly limit to start tracking spending.</div>
+          <div className={financeUi.emptyState}>{t('budgets.empty')}</div>
         ) : null}
         {budgets.map((budget) => {
           const category = categories.find((item) => item.id === budget.category_id);
           return (
-            <article key={budget.id} className={`${financeUi.listCard} flex items-center justify-between`}>
-              <div>
-                <p className='font-semibold text-slate-900'>{category?.name ?? 'Unknown category'}</p>
+            <article key={budget.id} className={`${financeUi.listCard} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
+              <div className='min-w-0'>
+                <p className='font-semibold text-slate-900'>{category?.name ?? t('budgets.unknownCategory')}</p>
                 <p className='text-sm text-slate-600'>{budget.period_month}</p>
               </div>
-              <div className='flex items-center gap-4'>
+              <div className='flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-start'>
                 <p className='font-semibold text-amber-600'>{budget.limit_amount.toFixed(2)}</p>
-                <button type='button' className={financeUi.dangerButton} onClick={() => onDelete(budget.id)}>
-                  Delete
+                <button
+                  type='button'
+                  className={`${financeUi.dangerButton} w-full sm:w-auto`}
+                  onClick={() => onDelete(budget.id)}
+                >
+                  {t('common.delete')}
                 </button>
               </div>
             </article>

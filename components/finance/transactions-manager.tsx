@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
+import { useI18n } from '@/lib/i18n/client';
 
 type Account = { id: string; name: string; currency: string; is_active: boolean };
 type Category = { id: string; name: string; type: 'income' | 'expense' };
@@ -19,6 +20,7 @@ type Tx = {
 };
 
 export function TransactionsManager() {
+  const { t } = useI18n();
   const { addToast } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -57,9 +59,9 @@ export function TransactionsManager() {
           accountsPayload.message ??
           categoriesPayload.message ??
           transactionsPayload.message ??
-          'Failed to load transactions data.';
+          t('transactions.loadFailed');
         setError(message);
-        addToast({ title: 'Could not load transactions', description: message, variant: 'error' });
+        addToast({ title: t('transactions.loadErrorTitle'), description: message, variant: 'error' });
         return;
       }
 
@@ -72,10 +74,9 @@ export function TransactionsManager() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [addToast, t]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
@@ -86,16 +87,16 @@ export function TransactionsManager() {
     const selectedCategoryId = categoryId || filteredCategories[0]?.id;
 
     if (!selectedAccountId) {
-      const message = 'Please create an account first.';
+      const message = t('transactions.accountRequired');
       setError(message);
-      addToast({ title: 'Account required', description: message, variant: 'error' });
+      addToast({ title: t('transactions.accountRequiredTitle'), description: message, variant: 'error' });
       return;
     }
 
     if (!selectedCategoryId) {
-      const message = 'Please create a category first.';
+      const message = t('transactions.categoryRequired');
       setError(message);
-      addToast({ title: 'Category required', description: message, variant: 'error' });
+      addToast({ title: t('transactions.categoryRequiredTitle'), description: message, variant: 'error' });
       return;
     }
 
@@ -114,15 +115,15 @@ export function TransactionsManager() {
 
     const payload = await response.json();
     if (!response.ok) {
-      const message = payload.message ?? 'Failed to create transaction.';
+      const message = payload.message ?? t('transactions.createFailed');
       setError(message);
-      addToast({ title: 'Transaction creation failed', description: message, variant: 'error' });
+      addToast({ title: t('transactions.createErrorTitle'), description: message, variant: 'error' });
       return;
     }
 
     setDescription('');
     setAmount('0');
-    addToast({ title: 'Transaction added', description: 'The transaction was created successfully.' });
+    addToast({ title: t('transactions.createSuccessTitle'), description: t('transactions.createSuccessText') });
     await load();
   }
 
@@ -130,28 +131,28 @@ export function TransactionsManager() {
     const response = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
     if (!response.ok) {
       const payload = await response.json();
-      const message = payload.message ?? 'Failed to delete transaction.';
+      const message = payload.message ?? t('transactions.deleteFailed');
       setError(message);
-      addToast({ title: 'Transaction deletion failed', description: message, variant: 'error' });
+      addToast({ title: t('transactions.deleteErrorTitle'), description: message, variant: 'error' });
       return;
     }
 
-    addToast({ title: 'Transaction deleted', description: 'The transaction was removed.' });
+    addToast({ title: t('transactions.deleteSuccessTitle'), description: t('transactions.deleteSuccessText') });
     await load();
   }
 
   return (
     <div className='space-y-6'>
-      <form className={`${financeUi.formCard} grid gap-3 md:grid-cols-6`} onSubmit={onCreate}>
+      <form className={`${financeUi.formCard} grid gap-3 sm:grid-cols-2 xl:grid-cols-6`} onSubmit={onCreate}>
         <div>
-          <label className={financeUi.label}>Type</label>
+          <label className={financeUi.label}>{t('transactions.type')}</label>
           <StyledSelect value={type} onChange={(event) => setType(event.target.value as 'income' | 'expense')}>
-            <option value='expense'>Expense</option>
-            <option value='income'>Income</option>
+            <option value='expense'>{t('dashboard.expense')}</option>
+            <option value='income'>{t('dashboard.income')}</option>
           </StyledSelect>
         </div>
         <div>
-          <label className={financeUi.label}>Account</label>
+          <label className={financeUi.label}>{t('transactions.account')}</label>
           <StyledSelect
             value={accountId || accounts[0]?.id || ''}
             onChange={(event) => setAccountId(event.target.value)}
@@ -165,7 +166,7 @@ export function TransactionsManager() {
           </StyledSelect>
         </div>
         <div>
-          <label className={financeUi.label}>Category</label>
+          <label className={financeUi.label}>{t('transactions.category')}</label>
           <StyledSelect
             value={categoryId || filteredCategories[0]?.id || ''}
             onChange={(event) => setCategoryId(event.target.value)}
@@ -179,7 +180,7 @@ export function TransactionsManager() {
           </StyledSelect>
         </div>
         <div>
-          <label className={financeUi.label}>Amount</label>
+          <label className={financeUi.label}>{t('transactions.amount')}</label>
           <input
             type='number'
             step='0.01'
@@ -190,7 +191,7 @@ export function TransactionsManager() {
           />
         </div>
         <div>
-          <label className={financeUi.label}>Date</label>
+          <label className={financeUi.label}>{t('transactions.date')}</label>
           <input
             type='date'
             className={financeUi.input}
@@ -201,14 +202,14 @@ export function TransactionsManager() {
         </div>
         <div className='flex items-end'>
           <button type='submit' className={`${financeUi.primaryButton} w-full`}>
-            Add
+            {t('transactions.add')}
           </button>
         </div>
-        <div className='md:col-span-6'>
-          <label className={financeUi.label}>Description</label>
+        <div className='sm:col-span-2 xl:col-span-6'>
+          <label className={financeUi.label}>{t('transactions.description')}</label>
           <input
             className={financeUi.input}
-            placeholder='Description (optional)'
+            placeholder={t('transactions.descriptionPlaceholder')}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
           />
@@ -220,27 +221,27 @@ export function TransactionsManager() {
       {isLoading ? (
         <div className={financeUi.loadingWrap}>
           <span className={financeUi.spinner} />
-          <span>Loading transactions...</span>
+          <span>{t('transactions.loading')}</span>
         </div>
       ) : null}
 
       <div className='space-y-3'>
         {!isLoading && transactions.length === 0 ? (
-          <div className={financeUi.emptyState}>No transactions yet. Add one above to populate your history.</div>
+          <div className={financeUi.emptyState}>{t('transactions.empty')}</div>
         ) : null}
         {transactions.map((tx) => (
-          <article key={tx.id} className={`${financeUi.listCard} flex items-center justify-between`}>
-            <div>
-              <p className='font-semibold text-slate-900'>{tx.description || 'No description'}</p>
+          <article key={tx.id} className={`${financeUi.listCard} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
+            <div className='min-w-0'>
+              <p className='font-semibold text-slate-900'>{tx.description || t('transactions.noDescription')}</p>
               <p className='text-sm text-slate-600'>{tx.transaction_date}</p>
             </div>
-            <div className='flex items-center gap-4'>
+            <div className='flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-start'>
               <p className={tx.type === 'income' ? 'font-semibold text-emerald-600' : 'font-semibold text-rose-600'}>
                 {tx.type === 'income' ? '+' : '-'}
                 {tx.amount.toFixed(2)}
               </p>
-              <button type='button' className={financeUi.dangerButton} onClick={() => onDelete(tx.id)}>
-                Delete
+              <button type='button' className={`${financeUi.dangerButton} w-full sm:w-auto`} onClick={() => onDelete(tx.id)}>
+                {t('common.delete')}
               </button>
             </div>
           </article>

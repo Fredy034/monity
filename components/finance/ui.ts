@@ -6,9 +6,9 @@ export const financeUi = {
   panelSoft: 'rounded-2xl border border-slate-200 bg-slate-50/70 p-4',
   formCard: 'rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5',
   listCard:
-    'rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md',
+    'min-w-0 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md',
   listRow:
-    'flex items-center justify-between rounded-xl border border-slate-200 bg-gradient-to-r from-white to-slate-50/80 px-3 py-2 text-sm',
+    'flex min-w-0 flex-wrap items-start justify-between gap-2 rounded-xl border border-slate-200 bg-gradient-to-r from-white to-slate-50/80 px-3 py-2 text-sm sm:flex-nowrap sm:items-center',
   sectionTitle: 'text-sm font-semibold uppercase tracking-[0.16em] text-slate-500',
   label: 'mb-2 block text-sm font-medium text-slate-700',
   input:

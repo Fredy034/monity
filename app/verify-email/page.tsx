@@ -2,27 +2,28 @@ import { redirect } from 'next/navigation';
 
 import { AuthShell } from '@/components/auth/auth-shell';
 import { VerificationForm } from '@/components/auth/verification-form';
+import { withLocale } from '@/lib/i18n';
+import { getServerTranslator } from '@/lib/i18n/server';
 import { getResolvedSessionFromCookies } from '@/lib/insforge/session';
 import { cookies } from 'next/headers';
 
 export default async function VerifyEmailPage() {
   const session = await getResolvedSessionFromCookies(await cookies());
+  const { locale, t } = await getServerTranslator();
 
   if (session) {
-    redirect('/dashboard');
+    redirect(withLocale(locale, '/dashboard'));
   }
 
   return (
     <AuthShell
-      eyebrow='Verify access'
-      title='Confirm your email address'
-      description='Verify your account to unlock your dashboard and start tracking accounts, transactions, and budgets.'
+      eyebrow={t('auth.verify.eyebrow')}
+      title={t('auth.verify.title')}
+      description={t('auth.verify.description')}
     >
       <div className='mb-6'>
-        <h2 className='text-2xl font-semibold tracking-tight text-slate-950'>Verify your inbox</h2>
-        <p className='mt-2 text-sm leading-6 text-slate-600'>
-          Enter your 6-digit code to finish setup and continue to your finance dashboard.
-        </p>
+        <h2 className='text-2xl font-semibold tracking-tight text-slate-950'>{t('auth.verify.cardTitle')}</h2>
+        <p className='mt-2 text-sm leading-6 text-slate-600'>{t('auth.verify.cardText')}</p>
       </div>
       <VerificationForm endpoint='/api/auth/verify-email' />
     </AuthShell>

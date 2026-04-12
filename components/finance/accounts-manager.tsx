@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
+import { useI18n } from '@/lib/i18n/client';
 
 type Account = {
   id: string;
@@ -16,14 +17,8 @@ type Account = {
   is_active: boolean;
 };
 
-const accountTypes = [
-  { value: 'bank', label: 'Bank account' },
-  { value: 'cash', label: 'Cash' },
-  { value: 'credit_card', label: 'Credit card' },
-  { value: 'debit_card', label: 'Debit card' },
-];
-
 export function AccountsManager() {
+  const { t } = useI18n();
   const { addToast } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [name, setName] = useState('');
@@ -33,27 +28,27 @@ export function AccountsManager() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       const response = await fetch('/api/accounts');
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.message ?? 'Failed to load accounts.');
+      if (!response.ok) throw new Error(payload.message ?? t('accounts.loadFailed'));
       setAccounts(payload.data ?? []);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load accounts.';
+      const message = err instanceof Error ? err.message : t('accounts.loadFailed');
       setError(message);
-      addToast({ title: 'Could not load accounts', description: message, variant: 'error' });
+      addToast({ title: t('accounts.loadErrorTitle'), description: message, variant: 'error' });
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [addToast, t]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   async function onCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,15 +68,15 @@ export function AccountsManager() {
 
     const payload = await response.json();
     if (!response.ok) {
-      const message = payload.message ?? 'Failed to create account.';
+      const message = payload.message ?? t('accounts.createFailed');
       setError(message);
-      addToast({ title: 'Account creation failed', description: message, variant: 'error' });
+      addToast({ title: t('accounts.createErrorTitle'), description: message, variant: 'error' });
       return;
     }
 
     setName('');
     setInitialBalance('0');
-    addToast({ title: 'Account created', description: 'The account was added successfully.' });
+    addToast({ title: t('accounts.createSuccessTitle'), description: t('accounts.createSuccessText') });
     await load();
   }
 
@@ -89,41 +84,40 @@ export function AccountsManager() {
     const response = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
     if (!response.ok) {
       const payload = await response.json();
-      const message = payload.message ?? 'Failed to delete account.';
+      const message = payload.message ?? t('accounts.deleteFailed');
       setError(message);
-      addToast({ title: 'Account deletion failed', description: message, variant: 'error' });
+      addToast({ title: t('accounts.deleteErrorTitle'), description: message, variant: 'error' });
       return;
     }
 
-    addToast({ title: 'Account deleted', description: 'The account was removed.' });
+    addToast({ title: t('accounts.deleteSuccessTitle'), description: t('accounts.deleteSuccessText') });
     await load();
   }
 
   return (
     <div className='space-y-6'>
-      <form className={`${financeUi.formCard} grid gap-3 md:grid-cols-5`} onSubmit={onCreate}>
+      <form className={`${financeUi.formCard} grid gap-3 sm:grid-cols-2 xl:grid-cols-5`} onSubmit={onCreate}>
         <div>
-          <label className={financeUi.label}>Account name</label>
+          <label className={financeUi.label}>{t('accounts.name')}</label>
           <input
             className={financeUi.input}
-            placeholder='Main checking'
+            placeholder={t('accounts.namePlaceholder')}
             value={name}
             onChange={(event) => setName(event.target.value)}
             required
           />
         </div>
         <div>
-          <label className={financeUi.label}>Type</label>
+          <label className={financeUi.label}>{t('accounts.type')}</label>
           <StyledSelect value={type} onChange={(event) => setType(event.target.value)}>
-            {accountTypes.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
+            <option value='bank'>{t('accounts.accountTypeBank')}</option>
+            <option value='cash'>{t('accounts.accountTypeCash')}</option>
+            <option value='credit_card'>{t('accounts.accountTypeCreditCard')}</option>
+            <option value='debit_card'>{t('accounts.accountTypeDebitCard')}</option>
           </StyledSelect>
         </div>
         <div>
-          <label className={financeUi.label}>Currency</label>
+          <label className={financeUi.label}>{t('accounts.currency')}</label>
           <input
             className={financeUi.input}
             placeholder='USD'
@@ -134,7 +128,7 @@ export function AccountsManager() {
           />
         </div>
         <div>
-          <label className={financeUi.label}>Opening balance</label>
+          <label className={financeUi.label}>{t('accounts.openingBalance')}</label>
           <input
             type='number'
             step='0.01'
@@ -147,7 +141,7 @@ export function AccountsManager() {
         </div>
         <div className='flex items-end'>
           <button type='submit' className={`${financeUi.primaryButton} w-full`}>
-            Add account
+            {t('accounts.add')}
           </button>
         </div>
       </form>
@@ -157,29 +151,32 @@ export function AccountsManager() {
       {isLoading ? (
         <div className={financeUi.loadingWrap}>
           <span className={financeUi.spinner} />
-          <span>Loading accounts...</span>
+          <span>{t('accounts.loading')}</span>
         </div>
       ) : null}
 
       <div className='space-y-3'>
-        {!isLoading && accounts.length === 0 ? (
-          <div className={financeUi.emptyState}>
-            No accounts yet. Create an account above to start tracking balances.
-          </div>
-        ) : null}
+        {!isLoading && accounts.length === 0 ? <div className={financeUi.emptyState}>{t('accounts.empty')}</div> : null}
         {accounts.map((account) => (
-          <article key={account.id} className={`${financeUi.listCard} flex items-center justify-between`}>
-            <div>
+          <article
+            key={account.id}
+            className={`${financeUi.listCard} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}
+          >
+            <div className='min-w-0'>
               <p className='font-semibold text-slate-900'>{account.name}</p>
               <p className='text-sm text-slate-600'>
                 {account.type.replace('_', ' ')} | {account.currency}
               </p>
               <p className='mt-1 text-sm font-medium text-emerald-600'>
-                Current balance: {account.current_balance.toFixed(2)} {account.currency}
+                {t('accounts.currentBalance')}: {account.current_balance.toFixed(2)} {account.currency}
               </p>
             </div>
-            <button type='button' className={financeUi.dangerButton} onClick={() => onDelete(account.id)}>
-              Delete
+            <button
+              type='button'
+              className={`${financeUi.dangerButton} w-full sm:w-auto`}
+              onClick={() => onDelete(account.id)}
+            >
+              {t('common.delete')}
             </button>
           </article>
         ))}

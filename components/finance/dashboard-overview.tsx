@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
+import { useI18n } from '@/lib/i18n/client';
 
 type DashboardPayload = {
   totals: {
@@ -44,6 +45,7 @@ type Category = {
 };
 
 export function DashboardOverview() {
+  const { t } = useI18n();
   const { addToast } = useToast();
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -64,27 +66,27 @@ export function DashboardOverview() {
     const response = await fetch('/api/dashboard');
     const payload = await response.json();
     if (!response.ok) {
-      const message = payload.message ?? 'Failed to load dashboard data.';
+      const message = payload.message ?? t('dashboard.loadFailed');
       setError(message);
-      addToast({ title: 'Could not load dashboard', description: message, variant: 'error' });
+      addToast({ title: t('dashboard.loadErrorTitle'), description: message, variant: 'error' });
       return;
     }
 
     setData(payload.data);
-  }, []);
+  }, [addToast, t]);
 
   const fetchCategories = useCallback(async () => {
     const response = await fetch('/api/categories');
     const payload = await response.json();
     if (!response.ok) {
-      const message = payload.message ?? 'Failed to load categories.';
+      const message = payload.message ?? t('dashboard.loadCategoriesFailed');
       setError(message);
-      addToast({ title: 'Could not load categories', description: message, variant: 'error' });
+      addToast({ title: t('dashboard.loadCategoriesErrorTitle'), description: message, variant: 'error' });
       return;
     }
 
     setCategories(payload.data ?? []);
-  }, []);
+  }, [addToast, t]);
 
   useEffect(() => {
     void (async () => {
@@ -117,9 +119,9 @@ export function DashboardOverview() {
     const selectedCategory = categoryId || filteredCategories[0]?.id;
 
     if (!selectedAccount || !selectedCategory) {
-      const message = 'Please select an account and category before adding a transaction.';
+      const message = t('dashboard.missingDetails');
       setError(message);
-      addToast({ title: 'Missing transaction details', description: message, variant: 'error' });
+      addToast({ title: t('dashboard.missingDetailsTitle'), description: message, variant: 'error' });
       return;
     }
 
@@ -140,15 +142,15 @@ export function DashboardOverview() {
 
       const payload = await response.json();
       if (!response.ok) {
-        const message = payload.message ?? 'Failed to add transaction.';
+        const message = payload.message ?? t('dashboard.addFailed');
         setError(message);
-        addToast({ title: 'Transaction save failed', description: message, variant: 'error' });
+        addToast({ title: t('dashboard.saveErrorTitle'), description: message, variant: 'error' });
         return;
       }
 
       setAmount('0');
       setDescription('');
-      addToast({ title: 'Transaction added', description: 'Dashboard metrics were refreshed.' });
+      addToast({ title: t('dashboard.added'), description: t('dashboard.addedDescription') });
       await fetchDashboard();
     } finally {
       setIsSubmitting(false);
@@ -160,24 +162,24 @@ export function DashboardOverview() {
     return (
       <div className={financeUi.loadingWrap}>
         <span className={financeUi.spinner} />
-        <span>Loading dashboard data...</span>
+        <span>{t('dashboard.loading')}</span>
       </div>
     );
 
   return (
     <div className='space-y-6'>
       <section className={financeUi.formCard}>
-        <h2 className={financeUi.sectionTitle}>Quick add transaction</h2>
-        <form className='mt-3 grid gap-3 md:grid-cols-6' onSubmit={onAddTransaction}>
+        <h2 className={financeUi.sectionTitle}>{t('dashboard.quickAdd')}</h2>
+        <form className='mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6' onSubmit={onAddTransaction}>
           <div>
-            <label className={financeUi.label}>Type</label>
+            <label className={financeUi.label}>{t('dashboard.type')}</label>
             <StyledSelect value={txType} onChange={(event) => setTxType(event.target.value as 'income' | 'expense')}>
-              <option value='expense'>Expense</option>
-              <option value='income'>Income</option>
+              <option value='expense'>{t('dashboard.expense')}</option>
+              <option value='income'>{t('dashboard.income')}</option>
             </StyledSelect>
           </div>
           <div>
-            <label className={financeUi.label}>Account</label>
+            <label className={financeUi.label}>{t('dashboard.account')}</label>
             <StyledSelect value={accountId} onChange={(event) => setAccountId(event.target.value)}>
               {data.accounts.map((account) => (
                 <option key={account.id} value={account.id}>
@@ -187,7 +189,7 @@ export function DashboardOverview() {
             </StyledSelect>
           </div>
           <div>
-            <label className={financeUi.label}>Category</label>
+            <label className={financeUi.label}>{t('dashboard.category')}</label>
             <StyledSelect value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
               {filteredCategories.map((category) => (
                 <option key={category.id} value={category.id}>
@@ -197,7 +199,7 @@ export function DashboardOverview() {
             </StyledSelect>
           </div>
           <div>
-            <label className={financeUi.label}>Amount</label>
+            <label className={financeUi.label}>{t('dashboard.amount')}</label>
             <input
               type='number'
               step='0.01'
@@ -208,7 +210,7 @@ export function DashboardOverview() {
             />
           </div>
           <div>
-            <label className={financeUi.label}>Date</label>
+            <label className={financeUi.label}>{t('dashboard.date')}</label>
             <input
               type='date'
               className={financeUi.input}
@@ -219,27 +221,27 @@ export function DashboardOverview() {
           </div>
           <div className='flex items-end'>
             <button type='submit' className={`${financeUi.primaryButton} w-full`} disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Add'}
+              {isSubmitting ? t('dashboard.saving') : t('dashboard.add')}
             </button>
           </div>
-          <div className='md:col-span-6'>
-            <label className={financeUi.label}>Description</label>
+          <div className='sm:col-span-2 xl:col-span-6'>
+            <label className={financeUi.label}>{t('dashboard.description')}</label>
             <input
               className={financeUi.input}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder='Optional note'
+              placeholder={t('dashboard.descriptionPlaceholder')}
             />
           </div>
         </form>
       </section>
 
-      <section className='grid gap-4 md:grid-cols-4'>
-        <StatCard label='Total balance' value={data.totals.total_balance} highlight='text-emerald-600' />
-        <StatCard label='Income (month)' value={data.totals.month_income} highlight='text-cyan-600' />
-        <StatCard label='Expense (month)' value={data.totals.month_expense} highlight='text-rose-600' />
+      <section className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
+        <StatCard label={t('dashboard.totalBalance')} value={data.totals.total_balance} highlight='text-emerald-600' />
+        <StatCard label={t('dashboard.incomeMonth')} value={data.totals.month_income} highlight='text-cyan-600' />
+        <StatCard label={t('dashboard.expenseMonth')} value={data.totals.month_expense} highlight='text-rose-600' />
         <StatCard
-          label='Net (month)'
+          label={t('dashboard.netMonth')}
           value={data.totals.month_net}
           highlight={data.totals.month_net >= 0 ? 'text-emerald-600' : 'text-rose-600'}
         />
@@ -247,13 +249,13 @@ export function DashboardOverview() {
 
       <section className='grid gap-4 lg:grid-cols-2'>
         <div className={financeUi.formCard}>
-          <h2 className={financeUi.sectionTitle}>Account balances</h2>
+          <h2 className={financeUi.sectionTitle}>{t('dashboard.accountBalances')}</h2>
           <div className='mt-3 space-y-2'>
-            {data.accounts.length === 0 ? <div className={financeUi.emptyState}>No accounts available yet.</div> : null}
+            {data.accounts.length === 0 ? <div className={financeUi.emptyState}>{t('dashboard.noAccounts')}</div> : null}
             {data.accounts.map((item) => (
               <div key={item.id} className={financeUi.listRow}>
                 <span className='font-medium text-slate-800'>{item.name}</span>
-                <span className='text-emerald-600'>
+                <span className='shrink-0 text-emerald-600'>
                   {item.current_balance.toFixed(2)} {item.currency}
                 </span>
               </div>
@@ -262,18 +264,18 @@ export function DashboardOverview() {
         </div>
 
         <div className={financeUi.formCard}>
-          <h2 className={financeUi.sectionTitle}>Recent transactions</h2>
+          <h2 className={financeUi.sectionTitle}>{t('dashboard.recentTransactions')}</h2>
           <div className='mt-3 space-y-2'>
             {data.recent_transactions.length === 0 ? (
-              <div className={financeUi.emptyState}>No recent transactions to show.</div>
+              <div className={financeUi.emptyState}>{t('dashboard.noRecentTransactions')}</div>
             ) : null}
             {data.recent_transactions.map((item) => (
               <div key={item.id} className={financeUi.listRow}>
-                <div>
-                  <p className='font-medium text-slate-900'>{item.description || 'No description'}</p>
+                <div className='min-w-0'>
+                  <p className='font-medium text-slate-900'>{item.description || t('dashboard.noDescription')}</p>
                   <p className='text-xs text-slate-500'>{item.transaction_date}</p>
                 </div>
-                <span className={item.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}>
+                <span className={`shrink-0 ${item.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {item.type === 'income' ? '+' : '-'}
                   {item.amount.toFixed(2)}
                 </span>
@@ -285,10 +287,10 @@ export function DashboardOverview() {
 
       <section className='grid gap-4 lg:grid-cols-2'>
         <div className={financeUi.formCard}>
-          <h2 className={financeUi.sectionTitle}>Spending by category</h2>
+          <h2 className={financeUi.sectionTitle}>{t('dashboard.spendingByCategory')}</h2>
           <div className='mt-3 space-y-2'>
             {data.spending_by_category.length === 0 ? (
-              <div className={financeUi.emptyState}>No spending data for this month.</div>
+              <div className={financeUi.emptyState}>{t('dashboard.noSpendingData')}</div>
             ) : null}
             {data.spending_by_category.map((item) => (
               <div key={item.category_id} className={financeUi.listRow}>
@@ -303,16 +305,16 @@ export function DashboardOverview() {
         </div>
 
         <div className={financeUi.formCard}>
-          <h2 className={financeUi.sectionTitle}>Budget usage</h2>
+          <h2 className={financeUi.sectionTitle}>{t('dashboard.budgetUsage')}</h2>
           <div className='mt-3 space-y-3'>
             {data.budgets.length === 0 ? (
-              <div className={financeUi.emptyState}>No budgets set for this month.</div>
+              <div className={financeUi.emptyState}>{t('dashboard.noBudgets')}</div>
             ) : null}
             {data.budgets.map((item) => (
               <div key={item.id} className='rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm'>
-                <div className='flex items-center justify-between'>
+                <div className='flex flex-wrap items-center justify-between gap-2'>
                   <span className='font-medium text-slate-900'>{item.category_name}</span>
-                  <span className={item.is_exceeded ? 'text-rose-600' : 'text-emerald-600'}>
+                  <span className={`shrink-0 ${item.is_exceeded ? 'text-rose-600' : 'text-emerald-600'}`}>
                     {item.spent.toFixed(2)} / {item.limit_amount.toFixed(2)}
                   </span>
                 </div>
