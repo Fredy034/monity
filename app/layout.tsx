@@ -18,6 +18,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Monity',
   description: 'Secure personal finance tracking with InsForge and Next.js.',
+  icons: {
+    icon: '/monity-icon.png',
+    shortcut: '/monity-icon.png',
+    apple: '/monity-icon.png',
+  },
 };
 
 export default async function RootLayout({

@@ -1,6 +1,7 @@
 'use client';
 
 import { useI18n } from '@/lib/i18n/client';
+import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -46,7 +47,16 @@ export function FinanceShell({
     <main className={financeUi.shellBackground}>
       <div className='mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[280px_minmax(0,1fr)]'>
         <aside className={`${financeUi.panel} hidden h-fit flex-col lg:sticky lg:top-6 lg:flex`}>
-          <p className='px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500'>{t('common.appName')}</p>
+          <div className='p-1'>
+            <Image
+              src='/monity-logo_black.png'
+              alt={t('common.appName')}
+              width={180}
+              height={24}
+              priority
+              className='h-auto w-36'
+            />
+          </div>
           <nav className='mt-2 mb-4 flex flex-col gap-1'>
             {links.map((item) => (
               <Link
@@ -101,7 +111,14 @@ export function FinanceShell({
 
           <aside className='absolute inset-y-0 left-0 flex w-[min(86vw,320px)] flex-col border-r border-slate-200 bg-white p-4 shadow-[0_24px_80px_rgba(15,23,42,0.2)]'>
             <div className='mb-2 flex items-center justify-between'>
-              <p className='px-2 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500'>{t('common.appName')}</p>
+              <Image
+                src='/monity-logo_black.png'
+                alt={t('common.appName')}
+                width={156}
+                height={42}
+                priority
+                className='h-auto w-32'
+              />
               <button
                 type='button'
                 className='inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-2.5 text-sm text-slate-600'

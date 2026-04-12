@@ -49,6 +49,33 @@ lib/
 	finance/validation.ts  # API payload parsing/validation
 ```
 
+## Project Image Guidelines
+
+Brand assets live in `public/` and should be used consistently across app surfaces.
+
+Available files:
+
+- `public/monity-logo.png` and `public/monity-logo.webp`: primary logo (icon + wordmark) for light backgrounds.
+- `public/monity-logo_black.png` and `public/monity-logo_black.webp`: navy wordmark variant for neutral/light UI where stronger text contrast is needed.
+- `public/file.svg`: primary SVG logo for scalable UI placements when vector output is preferred.
+- `public/monity-icon.png` and `public/monity-icon.webp`: icon-only mark for compact placements (favicon-like, app tiles, sidebar, avatar-style badges).
+- `public/image-guideline.png`: reference board showing approved color and composition variants.
+
+Usage rules:
+
+- Prefer `.webp` in UI for better payload size; keep `.png` as fallback for environments that need it.
+- Prefer `.svg` for sharp rendering at varied sizes when no raster effects are required.
+- Do not stretch logos non-uniformly; preserve original aspect ratio.
+- Keep clear space around logos (at least the icon's smallest bar width on each side).
+- Use icon-only assets only when horizontal space is constrained.
+- On dark surfaces, use gradient/bright variants with sufficient contrast.
+- Avoid adding drop-shadows, recoloring, or overlay effects that alter brand colors.
+
+Implementation notes (Next.js):
+
+- Use `next/image` for raster assets (`.webp`, `.png`) to get automatic optimization.
+- Place static brand references in `public/` and load them via absolute paths (for example, `/monity-logo.webp`).
+
 ## Environment Variables
 
 Create `.env.local`:

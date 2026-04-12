@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
@@ -19,6 +20,14 @@ export default async function HomePage() {
       <div className='mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center sm:min-h-[calc(100vh-5rem)]'>
         <div className='grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16'>
           <section className='flex flex-col justify-center'>
+            <Image
+              src='/monity-logo_black.png'
+              alt='Monity'
+              width={240}
+              height={34}
+              priority
+              className='mb-5 h-auto w-44 sm:w-52'
+            />
             <p className='mb-4 inline-flex w-fit rounded-full border border-slate-200 bg-white px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 shadow-sm'>
               {t('home.badge')}
             </p>
