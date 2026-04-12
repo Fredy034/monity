@@ -13,7 +13,11 @@ export default async function BudgetsPage() {
   }
 
   return (
-    <FinanceShell title='Budgets' subtitle='Set monthly category limits and monitor your spending discipline.'>
+    <FinanceShell
+      title='Budgets'
+      subtitle='Set monthly category limits and monitor your spending discipline.'
+      account={{ email: session.user.email, displayName: session.user.displayName }}
+    >
       <BudgetsManager />
     </FinanceShell>
   );

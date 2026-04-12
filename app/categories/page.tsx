@@ -16,6 +16,7 @@ export default async function CategoriesPage() {
     <FinanceShell
       title='Categories'
       subtitle='Use system categories and create custom ones to classify income and expenses.'
+      account={{ email: session.user.email, displayName: session.user.displayName }}
     >
       <CategoriesManager />
     </FinanceShell>

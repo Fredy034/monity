@@ -4,6 +4,11 @@ import type { ReactNode } from 'react';
 import { SidebarAccountSection } from '@/components/finance/sidebar-account-section';
 import { financeUi } from '@/components/finance/ui';
 
+type FinanceShellAccount = {
+  email?: string;
+  displayName?: string | null;
+};
+
 const links = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/accounts', label: 'Accounts' },
@@ -17,11 +22,13 @@ export function FinanceShell({
   subtitle,
   actions,
   children,
+  account,
 }: {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
   children: ReactNode;
+  account?: FinanceShellAccount;
 }) {
   return (
     <main className={financeUi.shellBackground}>
@@ -40,7 +47,7 @@ export function FinanceShell({
             ))}
           </nav>
 
-          <SidebarAccountSection />
+          <SidebarAccountSection initialEmail={account?.email} initialDisplayName={account?.displayName} />
         </aside>
 
         <section className={financeUi.panel}>

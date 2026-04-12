@@ -13,6 +13,11 @@ type MePayload = {
   message?: string;
 };
 
+type SidebarAccountSectionProps = {
+  initialEmail?: string;
+  initialDisplayName?: string | null;
+};
+
 function getInitials(name: string, fallbackEmail: string) {
   const source = name.trim() || fallbackEmail;
   const words = source.replace(/@.*/, '').split(/\s+/).filter(Boolean);
@@ -22,22 +27,24 @@ function getInitials(name: string, fallbackEmail: string) {
   return `${words[0][0] ?? ''}${words[1][0] ?? ''}`.toUpperCase();
 }
 
-export function SidebarAccountSection() {
+export function SidebarAccountSection({ initialEmail = '', initialDisplayName = '' }: SidebarAccountSectionProps) {
   const router = useRouter();
   const { addToast } = useToast();
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialEmail && !initialDisplayName);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [email, setEmail] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [draftName, setDraftName] = useState('');
+  const [email, setEmail] = useState(initialEmail);
+  const [displayName, setDisplayName] = useState(initialDisplayName);
+  const [draftName, setDraftName] = useState(initialDisplayName);
 
   const initials = useMemo(() => getInitials(displayName, email), [displayName, email]);
 
   async function loadProfile() {
-    setIsLoading(true);
+    if (!initialEmail && !initialDisplayName) {
+      setIsLoading(true);
+    }
     try {
       const response = await fetch('/api/user/me', { cache: 'no-store' });
       const payload = (await response.json()) as MePayload;
@@ -58,7 +65,9 @@ export function SidebarAccountSection() {
       setDisplayName(resolvedDisplayName);
       setDraftName(resolvedDisplayName);
     } finally {
-      setIsLoading(false);
+      if (!initialEmail && !initialDisplayName) {
+        setIsLoading(false);
+      }
     }
   }
 

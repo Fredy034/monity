@@ -13,7 +13,11 @@ export default async function TransactionsPage() {
   }
 
   return (
-    <FinanceShell title='Transactions' subtitle='Track incomes and expenses, connected to an account and category.'>
+    <FinanceShell
+      title='Transactions'
+      subtitle='Track incomes and expenses, connected to an account and category.'
+      account={{ email: session.user.email, displayName: session.user.displayName }}
+    >
       <TransactionsManager />
     </FinanceShell>
   );

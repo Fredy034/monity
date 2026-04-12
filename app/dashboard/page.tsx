@@ -16,6 +16,7 @@ export default async function DashboardPage() {
     <FinanceShell
       title={`Welcome${session.user.displayName ? `, ${session.user.displayName}` : ''}`}
       subtitle='Track balances, spending patterns, and budget consumption in one place.'
+      account={{ email: session.user.email, displayName: session.user.displayName }}
     >
       <DashboardOverview />
     </FinanceShell>

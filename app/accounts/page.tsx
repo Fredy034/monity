@@ -16,6 +16,7 @@ export default async function AccountsPage() {
     <FinanceShell
       title='Accounts'
       subtitle='Create and manage bank, cash, debit, and credit accounts with opening balances.'
+      account={{ email: session.user.email, displayName: session.user.displayName }}
     >
       <AccountsManager />
     </FinanceShell>
