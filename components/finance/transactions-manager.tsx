@@ -1,14 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
+import { formatMoney } from '@/lib/finance/formatting';
 import { useI18n } from '@/lib/i18n/client';
 
 type Account = { id: string; name: string; currency: string; is_active: boolean };
-type Category = { id: string; name: string; type: 'income' | 'expense' };
+type Category = { id: string; name: string; type: 'income' | 'expense'; color: string | null };
 type Tx = {
   id: string;
   account_id: string;
@@ -20,7 +21,7 @@ type Tx = {
 };
 
 export function TransactionsManager() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { addToast } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -34,8 +35,62 @@ export function TransactionsManager() {
   const [amount, setAmount] = useState('0');
   const [description, setDescription] = useState('');
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().slice(0, 10));
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
+  const [filterCategoryId, setFilterCategoryId] = useState('all');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [minAmount, setMinAmount] = useState('');
+  const [maxAmount, setMaxAmount] = useState('');
 
   const filteredCategories = categories.filter((item) => item.type === type);
+  const accountMap = useMemo(() => new Map(accounts.map((item) => [item.id, item])), [accounts]);
+  const categoryMap = useMemo(() => new Map(categories.map((item) => [item.id, item])), [categories]);
+  const filterCategories = useMemo(() => {
+    if (filterType === 'all') return categories;
+    return categories.filter((category) => category.type === filterType);
+  }, [categories, filterType]);
+
+  const filteredTransactions = useMemo(() => {
+    const minAmountValue = minAmount.trim() ? Number(minAmount) : null;
+    const maxAmountValue = maxAmount.trim() ? Number(maxAmount) : null;
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    return transactions.filter((tx) => {
+      const category = categoryMap.get(tx.category_id);
+      const account = accountMap.get(tx.account_id);
+
+      if (filterType !== 'all' && tx.type !== filterType) return false;
+      if (filterCategoryId !== 'all' && tx.category_id !== filterCategoryId) return false;
+      if (fromDate && tx.transaction_date < fromDate) return false;
+      if (toDate && tx.transaction_date > toDate) return false;
+
+      if (minAmountValue !== null && Number.isFinite(minAmountValue) && tx.amount < minAmountValue) return false;
+      if (maxAmountValue !== null && Number.isFinite(maxAmountValue) && tx.amount > maxAmountValue) return false;
+
+      if (normalizedQuery) {
+        const haystack = [tx.description ?? '', category?.name ?? '', account?.name ?? ''].join(' ').toLowerCase();
+        if (!haystack.includes(normalizedQuery)) return false;
+      }
+
+      return true;
+    });
+  }, [
+    accountMap,
+    categoryMap,
+    filterCategoryId,
+    filterType,
+    fromDate,
+    maxAmount,
+    minAmount,
+    searchQuery,
+    toDate,
+    transactions,
+  ]);
 
   const load = useCallback(async () => {
     setError(null);
@@ -141,6 +196,60 @@ export function TransactionsManager() {
     await load();
   }
 
+  function startEdit(tx: Tx) {
+    setEditingId(tx.id);
+    setEditingCategoryId(tx.category_id);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditingCategoryId('');
+  }
+
+  async function onUpdateCategory(tx: Tx) {
+    const nextCategoryId = editingCategoryId || tx.category_id;
+
+    setIsUpdating(true);
+    try {
+      const response = await fetch(`/api/transactions/${tx.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: tx.type,
+          accountId: tx.account_id,
+          categoryId: nextCategoryId,
+          amount: tx.amount,
+          description: tx.description ?? '',
+          transactionDate: tx.transaction_date,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        const message = payload.message ?? t('transactions.updateFailed');
+        setError(message);
+        addToast({ title: t('transactions.updateErrorTitle'), description: message, variant: 'error' });
+        return;
+      }
+
+      addToast({ title: t('transactions.updateSuccessTitle'), description: t('transactions.updateSuccessText') });
+      cancelEdit();
+      await load();
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
+  function clearFilters() {
+    setSearchQuery('');
+    setFilterType('all');
+    setFilterCategoryId('all');
+    setFromDate('');
+    setToDate('');
+    setMinAmount('');
+    setMaxAmount('');
+  }
+
   return (
     <div className='space-y-6'>
       <form className={`${financeUi.formCard} grid gap-3 sm:grid-cols-2 xl:grid-cols-6`} onSubmit={onCreate}>
@@ -187,6 +296,9 @@ export function TransactionsManager() {
             className={financeUi.input}
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
+            onFocus={() => {
+              if (amount === '0') setAmount('');
+            }}
             required
           />
         </div>
@@ -216,6 +328,97 @@ export function TransactionsManager() {
         </div>
       </form>
 
+      <section className={`${financeUi.formCard} space-y-3`}>
+        <div className='flex flex-wrap items-center justify-between gap-2'>
+          <h2 className={financeUi.sectionTitle}>{t('transactions.filtersTitle')}</h2>
+          <button type='button' className={financeUi.secondaryButton} onClick={clearFilters}>
+            {t('transactions.clearFilters')}
+          </button>
+        </div>
+
+        <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
+          <div className='xl:col-span-2'>
+            <label className={financeUi.label}>{t('transactions.search')}</label>
+            <input
+              className={financeUi.input}
+              placeholder={t('transactions.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className={financeUi.label}>{t('transactions.type')}</label>
+            <StyledSelect
+              value={filterType}
+              onChange={(event) => {
+                const nextType = event.target.value as 'all' | 'income' | 'expense';
+                setFilterType(nextType);
+                setFilterCategoryId('all');
+              }}
+            >
+              <option value='all'>{t('transactions.allTypes')}</option>
+              <option value='expense'>{t('dashboard.expense')}</option>
+              <option value='income'>{t('dashboard.income')}</option>
+            </StyledSelect>
+          </div>
+
+          <div>
+            <label className={financeUi.label}>{t('transactions.category')}</label>
+            <StyledSelect value={filterCategoryId} onChange={(event) => setFilterCategoryId(event.target.value)}>
+              <option value='all'>{t('transactions.allCategories')}</option>
+              {filterCategories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </StyledSelect>
+          </div>
+
+          <div>
+            <label className={financeUi.label}>{t('transactions.fromDate')}</label>
+            <input
+              type='date'
+              className={financeUi.input}
+              value={fromDate}
+              onChange={(event) => setFromDate(event.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className={financeUi.label}>{t('transactions.toDate')}</label>
+            <input
+              type='date'
+              className={financeUi.input}
+              value={toDate}
+              onChange={(event) => setToDate(event.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className={financeUi.label}>{t('transactions.minAmount')}</label>
+            <input
+              type='number'
+              step='0.01'
+              className={financeUi.input}
+              value={minAmount}
+              onChange={(event) => setMinAmount(event.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className={financeUi.label}>{t('transactions.maxAmount')}</label>
+            <input
+              type='number'
+              step='0.01'
+              className={financeUi.input}
+              value={maxAmount}
+              onChange={(event) => setMaxAmount(event.target.value)}
+            />
+          </div>
+        </div>
+      </section>
+
       {error ? <p className={financeUi.errorBanner}>{error}</p> : null}
 
       {isLoading ? (
@@ -226,21 +429,73 @@ export function TransactionsManager() {
       ) : null}
 
       <div className='space-y-3'>
-        {!isLoading && transactions.length === 0 ? (
+        {!isLoading && filteredTransactions.length === 0 ? (
           <div className={financeUi.emptyState}>{t('transactions.empty')}</div>
         ) : null}
-        {transactions.map((tx) => (
-          <article key={tx.id} className={`${financeUi.listCard} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
+        {filteredTransactions.map((tx) => (
+          <article
+            key={tx.id}
+            className={`${financeUi.listCard} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}
+          >
             <div className='min-w-0'>
               <p className='font-semibold text-slate-900'>{tx.description || t('transactions.noDescription')}</p>
-              <p className='text-sm text-slate-600'>{tx.transaction_date}</p>
+              <div className='mt-1 flex flex-wrap items-center gap-2'>
+                <p className='text-sm text-slate-600'>{tx.transaction_date}</p>
+                <CategoryBadge
+                  category={categoryMap.get(tx.category_id)}
+                  fallbackLabel={t('transactions.unknownCategory')}
+                />
+              </div>
+              {editingId === tx.id ? (
+                <div className='mt-3 flex flex-col gap-2 sm:flex-row sm:items-center'>
+                  <StyledSelect
+                    value={editingCategoryId}
+                    onChange={(event) => setEditingCategoryId(event.target.value)}
+                    className='sm:max-w-xs'
+                  >
+                    {categories
+                      .filter((category) => category.type === tx.type)
+                      .map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                  </StyledSelect>
+                  <div className='flex gap-2'>
+                    <button
+                      type='button'
+                      className={financeUi.primaryButton}
+                      disabled={isUpdating}
+                      onClick={() => onUpdateCategory(tx)}
+                    >
+                      {t('common.save')}
+                    </button>
+                    <button type='button' className={financeUi.secondaryButton} onClick={cancelEdit}>
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
             <div className='flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-start'>
               <p className={tx.type === 'income' ? 'font-semibold text-emerald-600' : 'font-semibold text-rose-600'}>
                 {tx.type === 'income' ? '+' : '-'}
-                {tx.amount.toFixed(2)}
+                {formatMoney(tx.amount, { locale, currency: accountMap.get(tx.account_id)?.currency })}
               </p>
-              <button type='button' className={`${financeUi.dangerButton} w-full sm:w-auto`} onClick={() => onDelete(tx.id)}>
+              {editingId !== tx.id ? (
+                <button
+                  type='button'
+                  className={`${financeUi.secondaryButton} w-full sm:w-auto`}
+                  onClick={() => startEdit(tx)}
+                >
+                  {t('common.edit')}
+                </button>
+              ) : null}
+              <button
+                type='button'
+                className={`${financeUi.dangerButton} w-full sm:w-auto`}
+                onClick={() => onDelete(tx.id)}
+              >
                 {t('common.delete')}
               </button>
             </div>
@@ -248,5 +503,14 @@ export function TransactionsManager() {
         ))}
       </div>
     </div>
+  );
+}
+
+function CategoryBadge({ category, fallbackLabel }: { category?: Category; fallbackLabel: string }) {
+  return (
+    <span className='inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700'>
+      <span className='h-1.5 w-1.5 rounded-full' style={{ backgroundColor: category?.color ?? '#94A3B8' }} />
+      {category?.name ?? fallbackLabel}
+    </span>
   );
 }

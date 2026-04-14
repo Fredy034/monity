@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { applyRecurringForUser } from '@/lib/finance/recurring';
 import { signedAmount, type TransactionType } from '@/lib/finance/validation';
 import { jsonError } from '@/lib/insforge/api';
 import { getApiSessionContext, withSessionCookies } from '@/lib/insforge/route-session';
@@ -23,6 +24,11 @@ export async function GET() {
   if (!auth.ok) return auth.response;
 
   const { client, session } = auth.ctx;
+
+  const generation = await applyRecurringForUser(client, session.user.id);
+  if (generation.error) {
+    return jsonError(500, 'RECURRING_GENERATION_FAILED', generation.error.message);
+  }
 
   const currentMonthStart = monthStart();
   const currentMonthEnd = monthEnd(currentMonthStart);

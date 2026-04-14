@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { applyRecurringForUser } from '@/lib/finance/recurring';
 import { parseTransactionPayload } from '@/lib/finance/validation';
 import { getErrorMessage, jsonError, readJsonBody } from '@/lib/insforge/api';
 import { createServerInsForgeClient } from '@/lib/insforge/client';
@@ -33,6 +34,12 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
 
   const { client, session } = auth.ctx;
+
+  const generation = await applyRecurringForUser(client, session.user.id);
+  if (generation.error) {
+    return jsonError(500, 'RECURRING_GENERATION_FAILED', generation.error.message);
+  }
+
   const url = new URL(request.url);
   const accountId = url.searchParams.get('accountId');
   const categoryId = url.searchParams.get('categoryId');

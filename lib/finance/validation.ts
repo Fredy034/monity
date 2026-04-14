@@ -1,8 +1,10 @@
 export type AccountType = 'bank' | 'cash' | 'credit_card' | 'debit_card';
 export type TransactionType = 'income' | 'expense';
+export type RecurringFrequency = 'monthly';
 
 const ACCOUNT_TYPES: AccountType[] = ['bank', 'cash', 'credit_card', 'debit_card'];
 const TRANSACTION_TYPES: TransactionType[] = ['income', 'expense'];
+const RECURRING_FREQUENCIES: RecurringFrequency[] = ['monthly'];
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -140,6 +142,119 @@ export function parseBudgetPayload(input: unknown) {
       limit_amount: limitAmount,
     },
   };
+}
+
+export function parseRecurringExpensePayload(input: unknown) {
+  if (!isObject(input)) return { ok: false as const, message: 'Invalid payload.' };
+
+  const name = typeof input.name === 'string' ? input.name.trim() : '';
+  const accountId = typeof input.accountId === 'string' ? input.accountId.trim() : '';
+  const categoryId = typeof input.categoryId === 'string' ? input.categoryId.trim() : '';
+  const amount = parseAmount(input.amount);
+  const frequency = typeof input.frequency === 'string' ? input.frequency.trim() : 'monthly';
+  const startDate = parseIsoDate(input.startDate);
+  const isActive = typeof input.isActive === 'boolean' ? input.isActive : true;
+
+  if (!name) return { ok: false as const, message: 'Recurring expense name is required.' };
+  if (!accountId) return { ok: false as const, message: 'Associated account is required.' };
+  if (!categoryId) return { ok: false as const, message: 'Associated category is required.' };
+  if (amount === null || amount <= 0) return { ok: false as const, message: 'Amount must be greater than 0.' };
+  if (!RECURRING_FREQUENCIES.includes(frequency as RecurringFrequency)) {
+    return { ok: false as const, message: 'Invalid recurring frequency.' };
+  }
+  if (!startDate) return { ok: false as const, message: 'Invalid start date.' };
+
+  return {
+    ok: true as const,
+    value: {
+      name,
+      account_id: accountId,
+      category_id: categoryId,
+      amount,
+      frequency: frequency as RecurringFrequency,
+      start_date: startDate,
+      is_active: isActive,
+    },
+  };
+}
+
+export function parseRecurringExpenseUpdatePayload(input: unknown) {
+  if (!isObject(input)) return { ok: false as const, message: 'Invalid payload.' };
+
+  const next: {
+    name?: string;
+    account_id?: string;
+    category_id?: string;
+    frequency?: RecurringFrequency;
+    start_date?: string;
+    is_active?: boolean;
+    amount?: number;
+    amount_effective_from?: string;
+  } = {};
+
+  if ('name' in input) {
+    const name = typeof input.name === 'string' ? input.name.trim() : '';
+    if (!name) return { ok: false as const, message: 'Recurring expense name is required.' };
+    next.name = name;
+  }
+
+  if ('accountId' in input) {
+    const accountId = typeof input.accountId === 'string' ? input.accountId.trim() : '';
+    if (!accountId) return { ok: false as const, message: 'Associated account is required.' };
+    next.account_id = accountId;
+  }
+
+  if ('categoryId' in input) {
+    const categoryId = typeof input.categoryId === 'string' ? input.categoryId.trim() : '';
+    if (!categoryId) return { ok: false as const, message: 'Associated category is required.' };
+    next.category_id = categoryId;
+  }
+
+  if ('frequency' in input) {
+    const frequency = typeof input.frequency === 'string' ? input.frequency.trim() : '';
+    if (!RECURRING_FREQUENCIES.includes(frequency as RecurringFrequency)) {
+      return { ok: false as const, message: 'Invalid recurring frequency.' };
+    }
+    next.frequency = frequency as RecurringFrequency;
+  }
+
+  if ('startDate' in input) {
+    const startDate = parseIsoDate(input.startDate);
+    if (!startDate) return { ok: false as const, message: 'Invalid start date.' };
+    next.start_date = startDate;
+  }
+
+  if ('isActive' in input) {
+    if (typeof input.isActive !== 'boolean') {
+      return { ok: false as const, message: 'Invalid active status.' };
+    }
+    next.is_active = input.isActive;
+  }
+
+  if ('amount' in input) {
+    const amount = parseAmount(input.amount);
+    if (amount === null || amount <= 0) {
+      return { ok: false as const, message: 'Amount must be greater than 0.' };
+    }
+
+    const amountEffectiveFrom =
+      input.amountEffectiveFrom === undefined
+        ? new Date().toISOString().slice(0, 10)
+        : parseIsoDate(input.amountEffectiveFrom);
+
+    if (!amountEffectiveFrom) {
+      return { ok: false as const, message: 'Invalid amount effective date.' };
+    }
+
+    next.amount = amount;
+    next.amount_effective_from = amountEffectiveFrom;
+  }
+
+  if (Object.keys(next).length === 0) {
+    return { ok: false as const, message: 'At least one field is required for update.' };
+  }
+
+  return { ok: true as const, value: next };
 }
 
 export function signedAmount(type: TransactionType, amount: number): number {

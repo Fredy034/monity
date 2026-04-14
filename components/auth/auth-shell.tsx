@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import type { ReactNode } from 'react';
 
+import { LanguageSwitcher } from '@/components/i18n/language-switcher';
 import { useI18n } from '@/lib/i18n/client';
 
 export function AuthShell({
@@ -20,6 +21,9 @@ export function AuthShell({
 
   return (
     <main className='relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.14),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-4 py-8 text-slate-900 sm:px-8 sm:py-10 lg:px-12'>
+      <div className='mx-auto flex w-full max-w-6xl justify-end'>
+        <LanguageSwitcher className='rounded-xl border border-slate-200 bg-white/95 px-2 py-1 shadow-sm backdrop-blur' />
+      </div>
       <div className='mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center sm:min-h-[calc(100vh-5rem)]'>
         <div className='grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16'>
           <section className='flex flex-col justify-center'>

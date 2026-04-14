@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import { LanguageSwitcher } from '@/components/i18n/language-switcher';
 import { withLocale } from '@/lib/i18n';
 import { getServerTranslator } from '@/lib/i18n/server';
 import { getResolvedSessionFromCookies } from '@/lib/insforge/session';
@@ -17,6 +18,9 @@ export default async function HomePage() {
 
   return (
     <main className='min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.08),transparent_35%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-4 py-8 text-slate-900 sm:px-8 sm:py-10 lg:px-12'>
+      <div className='mx-auto mb-4 flex w-full max-w-6xl justify-end sm:mb-6'>
+        <LanguageSwitcher className='rounded-xl border border-slate-200 bg-white/95 px-2 py-1 shadow-sm backdrop-blur' />
+      </div>
       <div className='mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center sm:min-h-[calc(100vh-5rem)]'>
         <div className='grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16'>
           <section className='flex flex-col justify-center'>

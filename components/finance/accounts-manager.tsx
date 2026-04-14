@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
+import { formatMoney } from '@/lib/finance/formatting';
 import { useI18n } from '@/lib/i18n/client';
 
 type Account = {
@@ -18,7 +19,7 @@ type Account = {
 };
 
 export function AccountsManager() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { addToast } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [name, setName] = useState('');
@@ -136,6 +137,9 @@ export function AccountsManager() {
             placeholder='0.00'
             value={initialBalance}
             onChange={(event) => setInitialBalance(event.target.value)}
+            onFocus={() => {
+              if (initialBalance === '0') setInitialBalance('');
+            }}
             required
           />
         </div>
@@ -168,7 +172,8 @@ export function AccountsManager() {
                 {account.type.replace('_', ' ')} | {account.currency}
               </p>
               <p className='mt-1 text-sm font-medium text-emerald-600'>
-                {t('accounts.currentBalance')}: {account.current_balance.toFixed(2)} {account.currency}
+                {t('accounts.currentBalance')}:{' '}
+                {formatMoney(account.current_balance, { locale, currency: account.currency })}
               </p>
             </div>
             <button

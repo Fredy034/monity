@@ -8,6 +8,7 @@ import { useState } from 'react';
 
 import { SidebarAccountSection } from '@/components/finance/sidebar-account-section';
 import { financeUi } from '@/components/finance/ui';
+import { LanguageSwitcher } from '@/components/i18n/language-switcher';
 
 type FinanceShellAccount = {
   email?: string;
@@ -19,6 +20,7 @@ const links = [
   { href: '/dashboard', key: 'nav.dashboard' },
   { href: '/accounts', key: 'nav.accounts' },
   { href: '/transactions', key: 'nav.transactions' },
+  { href: '/recurring-expenses', key: 'nav.recurring' },
   { href: '/categories', key: 'nav.categories' },
   { href: '/budgets', key: 'nav.budgets' },
 ] as const;
@@ -84,6 +86,7 @@ export function FinanceShell({
               {subtitle ? <p className='mt-2 text-sm text-slate-600'>{subtitle}</p> : null}
             </div>
             <div className='flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end'>
+              <LanguageSwitcher className='rounded-xl border border-slate-200 bg-white px-2 py-1 shadow-sm' />
               <button
                 type='button'
                 className='inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 lg:hidden'

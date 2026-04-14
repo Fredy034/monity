@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
+import { formatMoney } from '@/lib/finance/formatting';
 import { useI18n } from '@/lib/i18n/client';
 
 type Budget = {
@@ -26,7 +27,7 @@ function currentMonthStart() {
 }
 
 export function BudgetsManager() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { addToast } = useToast();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -144,6 +145,9 @@ export function BudgetsManager() {
             className={financeUi.input}
             value={limitAmount}
             onChange={(event) => setLimitAmount(event.target.value)}
+            onFocus={() => {
+              if (limitAmount === '0') setLimitAmount('');
+            }}
             required
           />
         </div>
@@ -164,19 +168,20 @@ export function BudgetsManager() {
       ) : null}
 
       <div className='space-y-3'>
-        {!isLoading && budgets.length === 0 ? (
-          <div className={financeUi.emptyState}>{t('budgets.empty')}</div>
-        ) : null}
+        {!isLoading && budgets.length === 0 ? <div className={financeUi.emptyState}>{t('budgets.empty')}</div> : null}
         {budgets.map((budget) => {
           const category = categories.find((item) => item.id === budget.category_id);
           return (
-            <article key={budget.id} className={`${financeUi.listCard} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
+            <article
+              key={budget.id}
+              className={`${financeUi.listCard} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}
+            >
               <div className='min-w-0'>
                 <p className='font-semibold text-slate-900'>{category?.name ?? t('budgets.unknownCategory')}</p>
                 <p className='text-sm text-slate-600'>{budget.period_month}</p>
               </div>
               <div className='flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-start'>
-                <p className='font-semibold text-amber-600'>{budget.limit_amount.toFixed(2)}</p>
+                <p className='font-semibold text-amber-600'>{formatMoney(budget.limit_amount, { locale })}</p>
                 <button
                   type='button'
                   className={`${financeUi.dangerButton} w-full sm:w-auto`}

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
+import { formatMoney } from '@/lib/finance/formatting';
 import { useI18n } from '@/lib/i18n/client';
 
 type DashboardPayload = {
@@ -17,6 +18,8 @@ type DashboardPayload = {
   accounts: Array<{ id: string; name: string; currency: string; current_balance: number }>;
   recent_transactions: Array<{
     id: string;
+    account_id: string;
+    category_id: string;
     type: 'income' | 'expense';
     amount: number;
     description: string | null;
@@ -42,10 +45,13 @@ type Category = {
   id: string;
   name: string;
   type: 'income' | 'expense';
+  color: string | null;
 };
 
+const QUICK_ADD_STORAGE_KEY = 'monity.dashboard.quickAddOpen';
+
 export function DashboardOverview() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { addToast } = useToast();
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -59,8 +65,25 @@ export function DashboardOverview() {
   const [description, setDescription] = useState('');
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().slice(0, 10));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [hasLoadedQuickAddPreference, setHasLoadedQuickAddPreference] = useState(false);
 
   const filteredCategories = useMemo(() => categories.filter((item) => item.type === txType), [categories, txType]);
+  const defaultCurrency = data?.accounts[0]?.currency ?? 'USD';
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(QUICK_ADD_STORAGE_KEY);
+    if (stored === '1') {
+      setIsQuickAddOpen(true);
+    }
+
+    setHasLoadedQuickAddPreference(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedQuickAddPreference) return;
+    window.localStorage.setItem(QUICK_ADD_STORAGE_KEY, isQuickAddOpen ? '1' : '0');
+  }, [hasLoadedQuickAddPreference, isQuickAddOpen]);
 
   const fetchDashboard = useCallback(async () => {
     const response = await fetch('/api/dashboard');
@@ -169,80 +192,116 @@ export function DashboardOverview() {
   return (
     <div className='space-y-6'>
       <section className={financeUi.formCard}>
-        <h2 className={financeUi.sectionTitle}>{t('dashboard.quickAdd')}</h2>
-        <form className='mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6' onSubmit={onAddTransaction}>
-          <div>
-            <label className={financeUi.label}>{t('dashboard.type')}</label>
-            <StyledSelect value={txType} onChange={(event) => setTxType(event.target.value as 'income' | 'expense')}>
-              <option value='expense'>{t('dashboard.expense')}</option>
-              <option value='income'>{t('dashboard.income')}</option>
-            </StyledSelect>
-          </div>
-          <div>
-            <label className={financeUi.label}>{t('dashboard.account')}</label>
-            <StyledSelect value={accountId} onChange={(event) => setAccountId(event.target.value)}>
-              {data.accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
-            </StyledSelect>
-          </div>
-          <div>
-            <label className={financeUi.label}>{t('dashboard.category')}</label>
-            <StyledSelect value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
-              {filteredCategories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </StyledSelect>
-          </div>
-          <div>
-            <label className={financeUi.label}>{t('dashboard.amount')}</label>
-            <input
-              type='number'
-              step='0.01'
-              className={financeUi.input}
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className={financeUi.label}>{t('dashboard.date')}</label>
-            <input
-              type='date'
-              className={financeUi.input}
-              value={transactionDate}
-              onChange={(event) => setTransactionDate(event.target.value)}
-              required
-            />
-          </div>
-          <div className='flex items-end'>
-            <button type='submit' className={`${financeUi.primaryButton} w-full`} disabled={isSubmitting}>
-              {isSubmitting ? t('dashboard.saving') : t('dashboard.add')}
-            </button>
-          </div>
-          <div className='sm:col-span-2 xl:col-span-6'>
-            <label className={financeUi.label}>{t('dashboard.description')}</label>
-            <input
-              className={financeUi.input}
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder={t('dashboard.descriptionPlaceholder')}
-            />
-          </div>
-        </form>
+        <div className='flex flex-wrap items-center justify-between gap-2'>
+          <h2 className={financeUi.sectionTitle}>{t('dashboard.quickAdd')}</h2>
+          <button
+            type='button'
+            className={financeUi.secondaryButton}
+            onClick={() => setIsQuickAddOpen((value) => !value)}
+            aria-expanded={isQuickAddOpen}
+          >
+            {isQuickAddOpen ? t('dashboard.hideQuickAdd') : t('dashboard.showQuickAdd')}
+          </button>
+        </div>
+
+        {isQuickAddOpen ? (
+          <form className='mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6' onSubmit={onAddTransaction}>
+            <div>
+              <label className={financeUi.label}>{t('dashboard.type')}</label>
+              <StyledSelect value={txType} onChange={(event) => setTxType(event.target.value as 'income' | 'expense')}>
+                <option value='expense'>{t('dashboard.expense')}</option>
+                <option value='income'>{t('dashboard.income')}</option>
+              </StyledSelect>
+            </div>
+            <div>
+              <label className={financeUi.label}>{t('dashboard.account')}</label>
+              <StyledSelect value={accountId} onChange={(event) => setAccountId(event.target.value)}>
+                {data.accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </StyledSelect>
+            </div>
+            <div>
+              <label className={financeUi.label}>{t('dashboard.category')}</label>
+              <StyledSelect value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+                {filteredCategories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </StyledSelect>
+            </div>
+            <div>
+              <label className={financeUi.label}>{t('dashboard.amount')}</label>
+              <input
+                type='number'
+                step='0.01'
+                className={financeUi.input}
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                onFocus={() => {
+                  if (amount === '0') setAmount('');
+                }}
+                required
+              />
+            </div>
+            <div>
+              <label className={financeUi.label}>{t('dashboard.date')}</label>
+              <input
+                type='date'
+                className={financeUi.input}
+                value={transactionDate}
+                onChange={(event) => setTransactionDate(event.target.value)}
+                required
+              />
+            </div>
+            <div className='flex items-end'>
+              <button type='submit' className={`${financeUi.primaryButton} w-full`} disabled={isSubmitting}>
+                {isSubmitting ? t('dashboard.saving') : t('dashboard.add')}
+              </button>
+            </div>
+            <div className='sm:col-span-2 xl:col-span-6'>
+              <label className={financeUi.label}>{t('dashboard.description')}</label>
+              <input
+                className={financeUi.input}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder={t('dashboard.descriptionPlaceholder')}
+              />
+            </div>
+          </form>
+        ) : null}
       </section>
 
       <section className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-        <StatCard label={t('dashboard.totalBalance')} value={data.totals.total_balance} highlight='text-emerald-600' />
-        <StatCard label={t('dashboard.incomeMonth')} value={data.totals.month_income} highlight='text-cyan-600' />
-        <StatCard label={t('dashboard.expenseMonth')} value={data.totals.month_expense} highlight='text-rose-600' />
+        <StatCard
+          label={t('dashboard.totalBalance')}
+          value={data.totals.total_balance}
+          currency={defaultCurrency}
+          locale={locale}
+          highlight='text-emerald-600'
+        />
+        <StatCard
+          label={t('dashboard.incomeMonth')}
+          value={data.totals.month_income}
+          currency={defaultCurrency}
+          locale={locale}
+          highlight='text-cyan-600'
+        />
+        <StatCard
+          label={t('dashboard.expenseMonth')}
+          value={data.totals.month_expense}
+          currency={defaultCurrency}
+          locale={locale}
+          highlight='text-rose-600'
+        />
         <StatCard
           label={t('dashboard.netMonth')}
           value={data.totals.month_net}
+          currency={defaultCurrency}
+          locale={locale}
           highlight={data.totals.month_net >= 0 ? 'text-emerald-600' : 'text-rose-600'}
         />
       </section>
@@ -255,8 +314,8 @@ export function DashboardOverview() {
             {data.accounts.map((item) => (
               <div key={item.id} className={financeUi.listRow}>
                 <span className='font-medium text-slate-800'>{item.name}</span>
-                <span className='shrink-0 text-emerald-600'>
-                  {item.current_balance.toFixed(2)} {item.currency}
+                <span className='max-w-full text-right break-all text-emerald-600'>
+                  {formatMoney(item.current_balance, { locale, currency: item.currency })}
                 </span>
               </div>
             ))}
@@ -273,11 +332,20 @@ export function DashboardOverview() {
               <div key={item.id} className={financeUi.listRow}>
                 <div className='min-w-0'>
                   <p className='font-medium text-slate-900'>{item.description || t('dashboard.noDescription')}</p>
-                  <p className='text-xs text-slate-500'>{item.transaction_date}</p>
+                  <div className='mt-1 flex flex-wrap items-center gap-2'>
+                    <p className='text-xs text-slate-500'>{item.transaction_date}</p>
+                    <CategoryBadge
+                      category={categories.find((category) => category.id === item.category_id)}
+                      fallbackLabel={t('transactions.unknownCategory')}
+                    />
+                  </div>
                 </div>
-                <span className={`shrink-0 ${item.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                <span className={`max-w-full text-right break-all ${item.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {item.type === 'income' ? '+' : '-'}
-                  {item.amount.toFixed(2)}
+                  {formatMoney(item.amount, {
+                    locale,
+                    currency: data.accounts.find((account) => account.id === item.account_id)?.currency ?? defaultCurrency,
+                  })}
                 </span>
               </div>
             ))}
@@ -298,7 +366,7 @@ export function DashboardOverview() {
                   <span className='h-2.5 w-2.5 rounded-full' style={{ backgroundColor: item.color }} />
                   {item.category_name}
                 </span>
-                <span className='font-semibold text-amber-600'>{item.spent.toFixed(2)}</span>
+                <span className='font-semibold text-amber-600'>{formatMoney(item.spent, { locale, currency: defaultCurrency })}</span>
               </div>
             ))}
           </div>
@@ -314,8 +382,9 @@ export function DashboardOverview() {
               <div key={item.id} className='rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm'>
                 <div className='flex flex-wrap items-center justify-between gap-2'>
                   <span className='font-medium text-slate-900'>{item.category_name}</span>
-                  <span className={`shrink-0 ${item.is_exceeded ? 'text-rose-600' : 'text-emerald-600'}`}>
-                    {item.spent.toFixed(2)} / {item.limit_amount.toFixed(2)}
+                  <span className={`max-w-full text-right break-all ${item.is_exceeded ? 'text-rose-600' : 'text-emerald-600'}`}>
+                    {formatMoney(item.spent, { locale, currency: defaultCurrency })} /{' '}
+                    {formatMoney(item.limit_amount, { locale, currency: defaultCurrency })}
                   </span>
                 </div>
                 <div className='mt-2 h-2 rounded-full bg-slate-200'>
@@ -333,11 +402,37 @@ export function DashboardOverview() {
   );
 }
 
-function StatCard({ label, value, highlight }: { label: string; value: number; highlight: string }) {
+function StatCard({
+  label,
+  value,
+  currency,
+  locale,
+  highlight,
+}: {
+  label: string;
+  value: number;
+  currency: string;
+  locale: string;
+  highlight: string;
+}) {
   return (
-    <article className={financeUi.formCard}>
+    <article className={`${financeUi.formCard} min-w-0`}>
       <p className='text-xs uppercase tracking-[0.12em] text-slate-500'>{label}</p>
-      <p className={`mt-2 text-2xl font-semibold ${highlight}`}>{value.toFixed(2)}</p>
+      <p className={`mt-2 max-w-full break-all text-xl font-semibold sm:text-2xl ${highlight}`}>
+        {formatMoney(value, { locale, currency })}
+      </p>
     </article>
+  );
+}
+
+function CategoryBadge({ category, fallbackLabel }: { category?: Category; fallbackLabel: string }) {
+  return (
+    <span
+      className='inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700'
+      title={category?.name}
+    >
+      <span className='h-1.5 w-1.5 rounded-full' style={{ backgroundColor: category?.color ?? '#94A3B8' }} />
+      {category?.name ?? fallbackLabel}
+    </span>
   );
 }
