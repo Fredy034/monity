@@ -8,9 +8,15 @@ It includes:
 - Profile persistence in `user_profiles`
 - Account management (bank, cash, cards)
 - Transaction tracking (income and expense)
+- Transaction filtering (search, type, category, date range, amount range)
+- Transaction editing modal (category, amount, date, description)
 - Category management (system + custom)
+- Category editing modal for custom categories (name + color)
 - Monthly budgets with utilization tracking
 - Dashboard aggregates (balances, month totals, spending by category, recent transactions)
+- Recurring expenses with monthly generation and amount history
+- Collapsible finance panels (dashboard quick add, transactions add/filters) with local persistence
+- Locale-aware money formatting across finance views
 
 ## Tech Stack
 
@@ -19,6 +25,20 @@ It includes:
 - TypeScript (strict mode)
 - Tailwind CSS 4
 - InsForge SDK (`@insforge/sdk`)
+
+## Latest Improvements (April 2026)
+
+- Dashboard quick add is collapsible and persisted in local storage.
+- Transactions page now has collapsible Add and Filters sections, both persisted in local storage.
+- Transactions supports advanced client-side filters:
+  - text search by description/account/category
+  - type and category filters
+  - date range filters
+  - amount range filters
+- Transaction editing moved to a full-screen centered modal with editable category, amount, date, and description.
+- Custom category editing added through a modal (name and color only; type remains read-only).
+- Money values are now formatted with locale-aware currency formatting for improved clarity.
+- Language switcher and mobile finance interactions were refined for better usability.
 
 ## Project Structure
 
@@ -29,11 +49,12 @@ app/
 		accounts/            # account CRUD
 		categories/          # category CRUD
 		transactions/        # transaction CRUD
+    recurring-expenses/  # recurring expense CRUD + generation workflow
 		budgets/             # budget CRUD
 		dashboard/           # analytics endpoint
 		user/me/             # profile read/update
 	sign-in|sign-up|verify-email/
-	accounts|transactions|categories|budgets|dashboard/
+  accounts|transactions|recurring-expenses|categories|budgets|dashboard/
 
 components/
 	auth/                  # auth layouts/forms
@@ -43,9 +64,11 @@ components/
 insforge/migrations/
 	001_auth.sql           # user profile table + RLS + trigger
 	002_finance.sql        # finance tables + indexes + RLS + seed categories
+  003_recurring_expenses.sql # recurring expense tables, function, and policies
 
 lib/
 	insforge/              # client/session/cookie/api helpers
+  finance/formatting.ts  # locale-aware money formatting
 	finance/validation.ts  # API payload parsing/validation
 ```
 
@@ -162,6 +185,17 @@ Also includes:
 - Seeded system categories (Food, Transport, Housing, etc.)
 - RLS policies to scope data by authenticated user
 - Triggers for `updated_at`
+
+### `003_recurring_expenses.sql`
+
+Creates and configures recurring-expense support:
+
+- `public.recurring_expenses`
+- `public.recurring_expense_amounts`
+- `public.recurring_expense_occurrences`
+- transaction link fields for recurring traceability
+- recurring generation function and supporting constraints/indexes
+- RLS policies for recurring entities
 
 ## API Reference
 
@@ -291,6 +325,27 @@ Validation highlights:
 - `limitAmount > 0`
 - upsert conflict key is `(user_id, category_id, period_month)`
 
+### Recurring Expenses
+
+- `GET /api/recurring-expenses`
+- `POST /api/recurring-expenses`
+- `PATCH /api/recurring-expenses/:id`
+- `DELETE /api/recurring-expenses/:id`
+
+Recurring payload (create):
+
+```json
+{
+  "name": "Gym membership",
+  "accountId": "uuid",
+  "categoryId": "uuid",
+  "amount": 29.99,
+  "frequency": "monthly",
+  "startDate": "2026-04-01",
+  "isActive": true
+}
+```
+
 ### Dashboard
 
 - `GET /api/dashboard`
@@ -317,6 +372,7 @@ Protected finance pages:
 - `/dashboard`
 - `/accounts`
 - `/transactions`
+- `/recurring-expenses`
 - `/categories`
 - `/budgets`
 
