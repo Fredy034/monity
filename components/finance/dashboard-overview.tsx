@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { DashboardCharts, type DashboardChartsPayload } from '@/components/finance/dashboard-charts';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
@@ -31,6 +32,7 @@ type DashboardPayload = {
     color: string;
     spent: number;
   }>;
+  charts: DashboardChartsPayload;
   budgets: Array<{
     id: string;
     category_name: string;
@@ -53,13 +55,17 @@ const QUICK_ADD_STORAGE_KEY = 'monity.dashboard.quickAddOpen';
 export function DashboardOverview() {
   const { t, locale } = useI18n();
   const { addToast } = useToast();
+  const currentYear = new Date().getUTCFullYear();
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedAccountScope, setSelectedAccountScope] = useState<string>('all');
+
   const [txType, setTxType] = useState<'income' | 'expense'>('expense');
-  const [accountId, setAccountId] = useState('');
+  const [quickAddAccountId, setQuickAddAccountId] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('0');
   const [description, setDescription] = useState('');
@@ -86,7 +92,12 @@ export function DashboardOverview() {
   }, [hasLoadedQuickAddPreference, isQuickAddOpen]);
 
   const fetchDashboard = useCallback(async () => {
-    const response = await fetch('/api/dashboard');
+    const query = new URLSearchParams({ year: String(selectedYear) });
+    if (selectedAccountScope !== 'all') {
+      query.set('accountId', selectedAccountScope);
+    }
+
+    const response = await fetch(`/api/dashboard?${query.toString()}`);
     const payload = await response.json();
     if (!response.ok) {
       const message = payload.message ?? t('dashboard.loadFailed');
@@ -95,8 +106,19 @@ export function DashboardOverview() {
       return;
     }
 
+    setError(null);
     setData(payload.data);
-  }, [addToast, t]);
+
+    const nextYear = Number(payload.data?.charts?.selected_year ?? selectedYear);
+    if (Number.isFinite(nextYear) && nextYear !== selectedYear) {
+      setSelectedYear(nextYear);
+    }
+
+    const nextAccount = (payload.data?.charts?.selected_account_id as string | null) ?? 'all';
+    if (nextAccount !== selectedAccountScope) {
+      setSelectedAccountScope(nextAccount);
+    }
+  }, [addToast, selectedAccountScope, selectedYear, t]);
 
   const fetchCategories = useCallback(async () => {
     const response = await fetch('/api/categories');
@@ -123,10 +145,10 @@ export function DashboardOverview() {
   }, [fetchCategories, fetchDashboard]);
 
   useEffect(() => {
-    if (!accountId && data?.accounts[0]?.id) {
-      setAccountId(data.accounts[0].id);
+    if (!quickAddAccountId && data?.accounts[0]?.id) {
+      setQuickAddAccountId(data.accounts[0].id);
     }
-  }, [accountId, data?.accounts]);
+  }, [data?.accounts, quickAddAccountId]);
 
   useEffect(() => {
     if (!categoryId && filteredCategories[0]?.id) {
@@ -138,7 +160,7 @@ export function DashboardOverview() {
     event.preventDefault();
     setError(null);
 
-    const selectedAccount = accountId || data?.accounts[0]?.id;
+    const selectedAccount = quickAddAccountId || data?.accounts[0]?.id;
     const selectedCategory = categoryId || filteredCategories[0]?.id;
 
     if (!selectedAccount || !selectedCategory) {
@@ -215,7 +237,7 @@ export function DashboardOverview() {
             </div>
             <div>
               <label className={financeUi.label}>{t('dashboard.account')}</label>
-              <StyledSelect value={accountId} onChange={(event) => setAccountId(event.target.value)}>
+              <StyledSelect value={quickAddAccountId} onChange={(event) => setQuickAddAccountId(event.target.value)}>
                 {data.accounts.map((account) => (
                   <option key={account.id} value={account.id}>
                     {account.name}
@@ -306,11 +328,67 @@ export function DashboardOverview() {
         />
       </section>
 
+      <section className={financeUi.formCard}>
+        <div className='flex flex-wrap items-end gap-3'>
+          <div className='min-w-45 flex-1'>
+            <label className={financeUi.label}>{t('dashboard.periodYear')}</label>
+            <StyledSelect
+              value={String(selectedYear)}
+              onChange={(event) => setSelectedYear(Number(event.target.value))}
+            >
+              {(data.charts.available_years.length > 0 ? data.charts.available_years : [selectedYear]).map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </StyledSelect>
+          </div>
+          <div className='min-w-55 flex-[1.4]'>
+            <label className={financeUi.label}>{t('dashboard.accountScope')}</label>
+            <StyledSelect
+              value={selectedAccountScope}
+              onChange={(event) => setSelectedAccountScope(event.target.value)}
+            >
+              <option value='all'>{t('dashboard.allAccounts')}</option>
+              {data.accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </StyledSelect>
+          </div>
+        </div>
+      </section>
+
+      <DashboardCharts
+        charts={data.charts}
+        locale={locale}
+        currency={defaultCurrency}
+        copy={{
+          income: t('dashboard.income'),
+          expenses: t('dashboard.expense'),
+          cumulative: t('dashboard.cumulativeBalanceLegend'),
+          incomeVsExpensesTitle: t('dashboard.incomeVsExpensesTitle'),
+          incomeVsExpensesSubtitle: t('dashboard.incomeVsExpensesSubtitle'),
+          cumulativeBalanceTitle: t('dashboard.cumulativeBalanceTitle'),
+          cumulativeBalanceSubtitle: t('dashboard.cumulativeBalanceSubtitle'),
+          spendingDistributionTitle: t('dashboard.spendingDistributionTitle'),
+          spendingDistributionSubtitle: t('dashboard.spendingDistributionSubtitle'),
+          expensesByAccountTitle: t('dashboard.expensesByAccountTitle'),
+          expensesByAccountSubtitle: t('dashboard.expensesByAccountSubtitle'),
+          noFlowData: t('dashboard.noFlowData'),
+          noCategoryData: t('dashboard.noCategoryChartData'),
+          noAccountExpenseData: t('dashboard.noAccountExpenseChartData'),
+        }}
+      />
+
       <section className='grid gap-4 lg:grid-cols-2'>
         <div className={financeUi.formCard}>
           <h2 className={financeUi.sectionTitle}>{t('dashboard.accountBalances')}</h2>
           <div className='mt-3 space-y-2'>
-            {data.accounts.length === 0 ? <div className={financeUi.emptyState}>{t('dashboard.noAccounts')}</div> : null}
+            {data.accounts.length === 0 ? (
+              <div className={financeUi.emptyState}>{t('dashboard.noAccounts')}</div>
+            ) : null}
             {data.accounts.map((item) => (
               <div key={item.id} className={financeUi.listRow}>
                 <span className='font-medium text-slate-800'>{item.name}</span>
@@ -340,11 +418,14 @@ export function DashboardOverview() {
                     />
                   </div>
                 </div>
-                <span className={`max-w-full text-right break-all ${item.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                <span
+                  className={`max-w-full text-right break-all ${item.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}
+                >
                   {item.type === 'income' ? '+' : '-'}
                   {formatMoney(item.amount, {
                     locale,
-                    currency: data.accounts.find((account) => account.id === item.account_id)?.currency ?? defaultCurrency,
+                    currency:
+                      data.accounts.find((account) => account.id === item.account_id)?.currency ?? defaultCurrency,
                   })}
                 </span>
               </div>
@@ -353,36 +434,18 @@ export function DashboardOverview() {
         </div>
       </section>
 
-      <section className='grid gap-4 lg:grid-cols-2'>
-        <div className={financeUi.formCard}>
-          <h2 className={financeUi.sectionTitle}>{t('dashboard.spendingByCategory')}</h2>
-          <div className='mt-3 space-y-2'>
-            {data.spending_by_category.length === 0 ? (
-              <div className={financeUi.emptyState}>{t('dashboard.noSpendingData')}</div>
-            ) : null}
-            {data.spending_by_category.map((item) => (
-              <div key={item.category_id} className={financeUi.listRow}>
-                <span className='inline-flex items-center gap-2 text-slate-800'>
-                  <span className='h-2.5 w-2.5 rounded-full' style={{ backgroundColor: item.color }} />
-                  {item.category_name}
-                </span>
-                <span className='font-semibold text-amber-600'>{formatMoney(item.spent, { locale, currency: defaultCurrency })}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
+      <section>
         <div className={financeUi.formCard}>
           <h2 className={financeUi.sectionTitle}>{t('dashboard.budgetUsage')}</h2>
           <div className='mt-3 space-y-3'>
-            {data.budgets.length === 0 ? (
-              <div className={financeUi.emptyState}>{t('dashboard.noBudgets')}</div>
-            ) : null}
+            {data.budgets.length === 0 ? <div className={financeUi.emptyState}>{t('dashboard.noBudgets')}</div> : null}
             {data.budgets.map((item) => (
               <div key={item.id} className='rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm'>
                 <div className='flex flex-wrap items-center justify-between gap-2'>
                   <span className='font-medium text-slate-900'>{item.category_name}</span>
-                  <span className={`max-w-full text-right break-all ${item.is_exceeded ? 'text-rose-600' : 'text-emerald-600'}`}>
+                  <span
+                    className={`max-w-full text-right break-all ${item.is_exceeded ? 'text-rose-600' : 'text-emerald-600'}`}
+                  >
                     {formatMoney(item.spent, { locale, currency: defaultCurrency })} /{' '}
                     {formatMoney(item.limit_amount, { locale, currency: defaultCurrency })}
                   </span>
