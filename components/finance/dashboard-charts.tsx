@@ -106,7 +106,7 @@ export function DashboardCharts({
                 <XAxis dataKey='month_label' tick={{ fill: '#475569', fontSize: 12 }} />
                 <YAxis tick={{ fill: '#475569', fontSize: 12 }} tickFormatter={(value) => compactMoney(value)} />
                 <Tooltip
-                  formatter={(value: number) => formatMoney(value, { locale, currency })}
+                  formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })}
                   labelFormatter={(label) => `${label} ${charts.selected_year}`}
                 />
                 <Legend />
@@ -140,7 +140,7 @@ export function DashboardCharts({
                 <XAxis dataKey='month_label' tick={{ fill: '#475569', fontSize: 12 }} />
                 <YAxis tick={{ fill: '#475569', fontSize: 12 }} tickFormatter={(value) => compactMoney(value)} />
                 <Tooltip
-                  formatter={(value: number) => formatMoney(value, { locale, currency })}
+                  formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })}
                   labelFormatter={(label) => `${label} ${charts.selected_year}`}
                 />
                 <Area
@@ -168,7 +168,7 @@ export function DashboardCharts({
         {hasCategoryData ? (
           <div className='flex flex-col gap-4 md:h-72 md:flex-row md:items-center'>
             {/* Chart Container - Fixed size, vertically centered on desktop */}
-            <div className='mx-auto h-56 w-full max-w-[220px] shrink-0'>
+            <div className='mx-auto h-56 w-full max-w-55 shrink-0'>
               <ResponsiveContainer width='100%' height='100%'>
                 <PieChart>
                   <Pie
@@ -185,7 +185,7 @@ export function DashboardCharts({
                       <Cell key={entry.category_id} fill={entry.color || '#94A3B8'} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => formatMoney(value, { locale, currency })} />
+                  <Tooltip formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -238,7 +238,7 @@ export function DashboardCharts({
                   tick={{ fill: '#475569', fontSize: 12 }}
                   interval={0}
                 />
-                <Tooltip formatter={(value: number) => formatMoney(value, { locale, currency })} />
+                <Tooltip formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })} />
                 <Bar dataKey='spent' name={copy.expenses} radius={[0, 8, 8, 0]} fill='#f97316' />
               </BarChart>
             </ResponsiveContainer>
