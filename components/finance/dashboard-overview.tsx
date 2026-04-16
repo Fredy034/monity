@@ -383,22 +383,52 @@ export function DashboardOverview() {
       />
 
       <section className='grid gap-4 lg:grid-cols-2'>
-        <div className={financeUi.formCard}>
-          <h2 className={financeUi.sectionTitle}>{t('dashboard.accountBalances')}</h2>
-          <div className='mt-3 space-y-2'>
-            {data.accounts.length === 0 ? (
-              <div className={financeUi.emptyState}>{t('dashboard.noAccounts')}</div>
-            ) : null}
-            {data.accounts.map((item) => (
-              <div key={item.id} className={financeUi.listRow}>
-                <span className='font-medium text-slate-800'>{item.name}</span>
-                <span className='max-w-full text-right break-all text-emerald-600'>
-                  {formatMoney(item.current_balance, { locale, currency: item.currency })}
-                </span>
-              </div>
-            ))}
+        <article className='grid grid-cols-1 gap-4'>
+          <div className={financeUi.formCard}>
+            <h2 className={financeUi.sectionTitle}>{t('dashboard.accountBalances')}</h2>
+            <div className='mt-3 space-y-2'>
+              {data.accounts.length === 0 ? (
+                <div className={financeUi.emptyState}>{t('dashboard.noAccounts')}</div>
+              ) : null}
+              {data.accounts.map((item) => (
+                <div key={item.id} className={financeUi.listRow}>
+                  <span className='font-medium text-slate-800'>{item.name}</span>
+                  <span className='max-w-full text-right break-all text-emerald-600'>
+                    {formatMoney(item.current_balance, { locale, currency: item.currency })}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+
+          <div className={financeUi.formCard}>
+            <h2 className={financeUi.sectionTitle}>{t('dashboard.budgetUsage')}</h2>
+            <div className='mt-3 space-y-3'>
+              {data.budgets.length === 0 ? (
+                <div className={financeUi.emptyState}>{t('dashboard.noBudgets')}</div>
+              ) : null}
+              {data.budgets.map((item) => (
+                <div key={item.id} className='rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm'>
+                  <div className='flex flex-wrap items-center justify-between gap-2'>
+                    <span className='font-medium text-slate-900'>{item.category_name}</span>
+                    <span
+                      className={`max-w-full text-right break-all ${item.is_exceeded ? 'text-rose-600' : 'text-emerald-600'}`}
+                    >
+                      {formatMoney(item.spent, { locale, currency: defaultCurrency })} /{' '}
+                      {formatMoney(item.limit_amount, { locale, currency: defaultCurrency })}
+                    </span>
+                  </div>
+                  <div className='mt-2 h-2 rounded-full bg-slate-200'>
+                    <div
+                      className={item.is_exceeded ? 'h-2 rounded-full bg-rose-500' : 'h-2 rounded-full bg-emerald-500'}
+                      style={{ width: `${Math.min(item.utilization_percent, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </article>
 
         <div className={financeUi.formCard}>
           <h2 className={financeUi.sectionTitle}>{t('dashboard.recentTransactions')}</h2>
@@ -428,34 +458,6 @@ export function DashboardOverview() {
                       data.accounts.find((account) => account.id === item.account_id)?.currency ?? defaultCurrency,
                   })}
                 </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <div className={financeUi.formCard}>
-          <h2 className={financeUi.sectionTitle}>{t('dashboard.budgetUsage')}</h2>
-          <div className='mt-3 space-y-3'>
-            {data.budgets.length === 0 ? <div className={financeUi.emptyState}>{t('dashboard.noBudgets')}</div> : null}
-            {data.budgets.map((item) => (
-              <div key={item.id} className='rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm'>
-                <div className='flex flex-wrap items-center justify-between gap-2'>
-                  <span className='font-medium text-slate-900'>{item.category_name}</span>
-                  <span
-                    className={`max-w-full text-right break-all ${item.is_exceeded ? 'text-rose-600' : 'text-emerald-600'}`}
-                  >
-                    {formatMoney(item.spent, { locale, currency: defaultCurrency })} /{' '}
-                    {formatMoney(item.limit_amount, { locale, currency: defaultCurrency })}
-                  </span>
-                </div>
-                <div className='mt-2 h-2 rounded-full bg-slate-200'>
-                  <div
-                    className={item.is_exceeded ? 'h-2 rounded-full bg-rose-500' : 'h-2 rounded-full bg-emerald-500'}
-                    style={{ width: `${Math.min(item.utilization_percent, 100)}%` }}
-                  />
-                </div>
               </div>
             ))}
           </div>
