@@ -17,11 +17,12 @@ export default async function HomePage() {
   }
 
   return (
-    <main className='min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.08),transparent_35%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-4 py-8 text-slate-900 sm:px-8 sm:py-10 lg:px-12'>
-      <div className='mx-auto mb-4 flex w-full max-w-6xl justify-end sm:mb-6'>
+    <main className='relative flex min-h-dvh flex-col overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.08),transparent_35%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-4 pb-8 pt-20 text-slate-900 sm:px-8 sm:pb-10 sm:pt-24 lg:px-12 lg:pt-28'>
+      <div className='absolute right-4 top-4 z-10 sm:right-8 sm:top-8 lg:right-12 lg:top-10'>
         <LanguageSwitcher className='rounded-xl border border-slate-200 bg-white/95 px-2 py-1 shadow-sm backdrop-blur' />
       </div>
-      <div className='mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center sm:min-h-[calc(100vh-5rem)]'>
+
+      <div className='mx-auto flex w-full max-w-6xl flex-1 items-center'>
         <div className='grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16'>
           <section className='flex flex-col justify-center'>
             <Image
