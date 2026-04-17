@@ -2,21 +2,22 @@
 
 Monity is a secure personal finance tracker built with Next.js and InsForge.
 
-It includes:
 
-- Email/password authentication with optional Google OAuth
-- Profile persistence in `user_profiles`
-- Account management (bank, cash, cards)
-- Transaction tracking (income and expense)
-- Transaction filtering (search, type, category, date range, amount range)
-- Transaction editing modal (category, amount, date, description)
-- Category management (system + custom)
-- Category editing modal for custom categories (name + color)
-- Monthly budgets with utilization tracking
-- Dashboard aggregates (balances, month totals, spending by category, recent transactions)
-- Recurring expenses with monthly generation and amount history
-- Collapsible finance panels (dashboard quick add, transactions add/filters) with local persistence
-- Locale-aware money formatting across finance views
+## Main Features
+
+- **Accounts & Balances**: Track multiple accounts (bank, cash, cards) with real-time balances and account management.
+- **Transactions**: Add, edit, and filter income or expenses. Advanced search, full-screen editing, and category assignment.
+- **Budgets**: Set monthly budgets per category, track utilization, and get alerts when limits are exceeded.
+- **Recurring Expenses**: Automate regular expenses with flexible scheduling and automatic transaction generation.
+- **Categories**: Organize your finances with system and custom categories, color coding, and easy editing.
+- **Dashboard & Insights**: Visualize balances, income, expenses, and trends with interactive charts and analytics.
+- **Authentication & Security**: Secure login, email verification, Google OAuth, and privacy-first data protection.
+- **Localization**: Multi-language support and locale-aware money formatting for a global experience.
+- **Profile Management**: Edit your display name, avatar, and email; profile data is persisted securely.
+- **Collapsible Panels**: Dashboard quick add and transaction filter/add panels are collapsible and persist state locally.
+- **Mobile Friendly**: Responsive design and refined mobile finance interactions.
+
+---
 
 ## Tech Stack
 
@@ -25,6 +26,7 @@ It includes:
 - TypeScript (strict mode)
 - Tailwind CSS 4
 - InsForge SDK (`@insforge/sdk`)
+
 
 ## Latest Improvements (April 2026)
 
@@ -39,6 +41,10 @@ It includes:
 - Custom category editing added through a modal (name and color only; type remains read-only).
 - Money values are now formatted with locale-aware currency formatting for improved clarity.
 - Language switcher and mobile finance interactions were refined for better usability.
+- Recurring expenses now support flexible scheduling and automatic transaction generation.
+- Dashboard analytics and charts improved for better insights.
+- Enhanced security and privacy-first data handling.
+
 
 ## Project Structure
 
@@ -132,6 +138,7 @@ Production commands:
 ```bash
 pnpm build
 pnpm start
+pnpm run deploy
 ```
 
 Lint:
