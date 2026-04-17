@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { LogoutButton } from '@/components/auth/logout-button';
 import { financeUi } from '@/components/finance/ui';
 import { useI18n } from '@/lib/i18n/client';
+import Image from 'next/image';
 
 type SidebarAccountSectionProps = {
   email?: string;
@@ -28,11 +29,24 @@ export function SidebarAccountSection({ email = '', displayName = '', avatarUrl 
   return (
     <div className='mt-auto border-t border-slate-200 pt-4'>
       <div className='rounded-2xl border border-slate-200 bg-slate-50/80 p-3'>
-        <p className='text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500'>{t('profile.accountLabel')}</p>
+        <p className='text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500'>
+          {t('profile.accountLabel')}
+        </p>
 
         <div className='mt-3 flex items-center gap-3'>
           <div className='flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-emerald-100 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-100'>
-            {avatarUrl ? <img alt={t('profile.accountLabel')} className='h-full w-full object-cover' src={avatarUrl} /> : initials}
+            {avatarUrl ? (
+              <Image
+                alt={t('profile.accountLabel')}
+                className='h-full w-full object-cover'
+                src={avatarUrl}
+                width={156}
+                height={42}
+                priority
+              />
+            ) : (
+              initials
+            )}
           </div>
           <div className='min-w-0'>
             <p className='truncate text-sm font-semibold text-slate-900'>{displayName || t('profile.yourAccount')}</p>
@@ -40,7 +54,7 @@ export function SidebarAccountSection({ email = '', displayName = '', avatarUrl 
           </div>
         </div>
 
-        <div className='mt-4 grid gap-2 sm:grid-cols-2'>
+        <div className='mt-4 grid grid-cols-1 gap-2'>
           <Link className={financeUi.secondaryButton} href={withLocale('/settings/profile')}>
             {t('profile.editProfile')}
           </Link>
