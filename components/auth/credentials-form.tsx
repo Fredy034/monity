@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import googleLogo from '@/public/icons/google.svg';
 
 import { useI18n } from '@/lib/i18n/client';
+import Image from 'next/image';
 
 type Props = {
   mode: 'sign-in' | 'sign-up';
@@ -174,12 +176,7 @@ export function CredentialsForm({ mode, endpoint, submitLabel, footerHref, foote
         onClick={() => startGoogleOAuth(setError, t('auth.form.oauthStartFailed'))}
         className='inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50'
       >
-        <svg aria-hidden='true' viewBox='0 0 24 24' className='h-5 w-5'>
-          <path
-            fill='#EA4335'
-            d='M12 10.2v3.9h5.4c-.2 1.2-1.4 3.5-5.4 3.5-3.2 0-5.8-2.7-5.8-6s2.6-6 5.8-6c1.8 0 3 .8 3.7 1.5l2.5-2.4C16.8 3.3 14.7 2.4 12 2.4 6.9 2.4 2.8 6.6 2.8 11.7S6.9 21 12 21c6.9 0 9.2-4.9 9.2-7.4 0-.5-.1-.9-.1-1.3H12z'
-          />
-        </svg>
+        <Image src={googleLogo} alt='Google' width={18} height={18} />
         {t('auth.form.continueWithGoogle')}
       </button>
 
