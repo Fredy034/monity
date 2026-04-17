@@ -64,19 +64,35 @@ export default async function HomePage() {
               <div className='mt-5 grid gap-4 text-sm text-slate-600 sm:grid-cols-2'>
                 <div className='rounded-2xl bg-slate-50 p-4'>
                   <p className='font-semibold text-slate-900'>{t('home.accountsTitle')}</p>
-                  <p className='mt-1'>{t('home.accountsText')}</p>
+                  <p className='mt-1 text-xs'>{t('home.accountsText')}</p>
                 </div>
                 <div className='rounded-2xl bg-slate-50 p-4'>
                   <p className='font-semibold text-slate-900'>{t('home.transactionsTitle')}</p>
-                  <p className='mt-1'>{t('home.transactionsText')}</p>
+                  <p className='mt-1 text-xs'>{t('home.transactionsText')}</p>
                 </div>
                 <div className='rounded-2xl bg-slate-50 p-4'>
                   <p className='font-semibold text-slate-900'>{t('home.budgetsTitle')}</p>
-                  <p className='mt-1'>{t('home.budgetsText')}</p>
+                  <p className='mt-1 text-xs'>{t('home.budgetsText')}</p>
                 </div>
                 <div className='rounded-2xl bg-slate-50 p-4'>
                   <p className='font-semibold text-slate-900'>{t('home.insightsTitle')}</p>
-                  <p className='mt-1'>{t('home.insightsText')}</p>
+                  <p className='mt-1 text-xs'>{t('home.insightsText')}</p>
+                </div>
+                <div className='rounded-2xl bg-slate-50 p-4'>
+                  <p className='font-semibold text-slate-900'>{t('home.recurringTitle')}</p>
+                  <p className='mt-1 text-xs'>{t('home.recurringText')}</p>
+                </div>
+                <div className='rounded-2xl bg-slate-50 p-4'>
+                  <p className='font-semibold text-slate-900'>{t('home.categoriesTitle')}</p>
+                  <p className='mt-1 text-xs'>{t('home.categoriesText')}</p>
+                </div>
+                <div className='rounded-2xl bg-slate-50 p-4'>
+                  <p className='font-semibold text-slate-900'>{t('home.authenticationTitle')}</p>
+                  <p className='mt-1 text-xs'>{t('home.authenticationText')}</p>
+                </div>
+                <div className='rounded-2xl bg-slate-50 p-4'>
+                  <p className='font-semibold text-slate-900'>{t('home.localizationTitle')}</p>
+                  <p className='mt-1 text-xs'>{t('home.localizationText')}</p>
                 </div>
               </div>
             </div>

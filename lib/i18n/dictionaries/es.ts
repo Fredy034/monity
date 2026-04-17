@@ -27,19 +27,26 @@ export const es = {
   home: {
     badge: 'Monity',
     heading: 'Toma control de tu dinero con cuentas, transacciones y presupuestos claros.',
-    subheading:
-      'Monity te ayuda a organizar tus cuentas, registrar ingresos y gastos, definir limites mensuales y entender a donde va tu dinero en un panel enfocado.',
+    subheading: 'Monity te ayuda a organizar tus cuentas, registrar ingresos y gastos, definir limites mensuales y entender a donde va tu dinero en un panel enfocado.',
     createAccount: 'Crear cuenta',
     signIn: 'Iniciar sesión',
     included: 'Incluye',
-    accountsTitle: 'Cuentas',
-    accountsText: 'Administra saldos bancarios, efectivo y tarjetas en un solo lugar.',
+    accountsTitle: 'Cuentas y Saldos',
+    accountsText: 'Sigue múltiples cuentas (banco, efectivo, tarjetas) con saldos en tiempo real y gestión de cuentas.',
     transactionsTitle: 'Transacciones',
-    transactionsText: 'Registra ingresos y gastos diarios por categoria.',
+    transactionsText: 'Agrega, edita y filtra ingresos o gastos. Búsqueda avanzada, edición a pantalla completa y asignación de categorías.',
     budgetsTitle: 'Presupuestos',
-    budgetsText: 'Define limites mensuales y detecta excesos a tiempo.',
-    insightsTitle: 'Analítica',
-    insightsText: 'Ve saldos, tendencias y gasto por categorías al instante.',
+    budgetsText: 'Define presupuestos mensuales por categoría, sigue su utilización y recibe alertas cuando se exceden los límites.',
+    insightsTitle: 'Panel e Insights',
+    insightsText: 'Visualiza saldos, ingresos, gastos y tendencias con gráficos interactivos y análisis.',
+    recurringTitle: 'Gastos Recurrentes',
+    recurringText: 'Automatiza gastos regulares con programación flexible y generación automática de transacciones.',
+    categoriesTitle: 'Categorías',
+    categoriesText: 'Organiza tus finanzas con categorías del sistema y personalizadas, codificación por colores y edición sencilla.',
+    authenticationTitle: 'Autenticación y Seguridad',
+    authenticationText: 'Accede de forma segura con correo o Google. Verificación de correo, gestión de sesión y futura configuración de seguridad.',
+    localizationTitle: 'Localización y Accesibilidad',
+    localizationText: 'Soporte completo en inglés y español, con características de accesibilidad y diseño responsive para todos los dispositivos.',
   },
   auth: {
     shell: {
@@ -62,8 +69,7 @@ export const es = {
     signUp: {
       eyebrow: 'Registro Monity',
       title: 'Crea tu cuenta y empieza a controlar mejor tus finanzas',
-      description:
-        'Configura tu espacio para gestionar cuentas, registrar transacciones y mantener tus presupuestos mensuales al dia.',
+      description: 'Configura tu espacio para gestionar cuentas, registrar transacciones y mantener tus presupuestos mensuales al dia.',
       cardTitle: 'Crea tu cuenta',
       cardText: 'Empieza a organizar tu dinero en un solo lugar con categorias claras y analisis accionable de gastos.',
       submit: 'Crear cuenta',
@@ -72,8 +78,7 @@ export const es = {
     verify: {
       eyebrow: 'Verificar acceso',
       title: 'Confirma tu correo electrónico para acceder a tu panel',
-      description:
-        'Verifica tu cuenta para desbloquear tu panel y empezar a registrar cuentas, transacciones y presupuestos.',
+      description: 'Verifica tu cuenta para desbloquear tu panel y empezar a registrar cuentas, transacciones y presupuestos.',
       cardTitle: 'Verifica tu bandeja',
       cardText: 'Ingresa tu codigo de 6 dígitos para finalizar y continuar al panel financiero.',
       submit: 'Verificar correo',
@@ -349,15 +354,13 @@ export const es = {
     email: 'Correo',
     emailHint: 'El correo es administrado por autenticacion y aun no puede cambiarse aquí.',
     futureReadyTitle: 'Estructura preparada',
-    futureReadyText:
-      'Esta pagina esta preparada para agregar avatar, cambio de contrasena y ajustes de seguridad sin modificar la barra lateral.',
+    futureReadyText: 'Esta pagina esta preparada para agregar avatar, cambio de contrasena y ajustes de seguridad sin modificar la barra lateral.',
     saveChanges: 'Guardar cambios',
     saving: 'Guardando...',
     currentIdentity: 'Identidad actual',
     extensibility: 'Escalabilidad',
     extensibilityItem1: 'La subida de avatar puede agregarse extendiendo el mismo endpoint de perfil.',
-    extensibilityItem2:
-      'Los controles de contraseña y seguridad pueden vivir en esta ruta sin cambios de barra lateral.',
+    extensibilityItem2: 'Los controles de contraseña y seguridad pueden vivir en esta ruta sin cambios de barra lateral.',
     extensibilityItem3: 'Los cambios guardados refrescan de inmediato el layout autenticado.',
     invalidNameTitle: 'Nombre visible invalido',
     invalidNameText: 'Ingresa un nombre entre 1 y 80 caracteres.',

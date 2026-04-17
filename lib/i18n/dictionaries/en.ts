@@ -27,19 +27,26 @@ export const en = {
   home: {
     badge: 'Monity',
     heading: 'Take control of your money with clear accounts, transactions, and budgets.',
-    subheading:
-      'Monity helps you organize your accounts, track income and expenses, set monthly limits, and understand where your money goes in one focused dashboard.',
+    subheading: 'Monity helps you organize your accounts, track income and expenses, set monthly limits, and understand where your money goes in one focused dashboard.',
     createAccount: 'Create account',
     signIn: 'Sign in',
     included: 'Included',
-    accountsTitle: 'Accounts',
-    accountsText: 'Manage bank, cash, and card balances in one place.',
+    accountsTitle: 'Accounts & Balances',
+    accountsText: 'Track multiple accounts (bank, cash, cards) with real-time balances and account management.',
     transactionsTitle: 'Transactions',
-    transactionsText: 'Track daily income and expenses with categories.',
+    transactionsText: 'Add, edit, and filter income or expenses. Advanced search, full-screen editing, and category assignment.',
     budgetsTitle: 'Budgets',
-    budgetsText: 'Set monthly limits and spot overspending early.',
-    insightsTitle: 'Insights',
-    insightsText: 'See balances, trends, and category spending instantly.',
+    budgetsText: 'Set monthly budgets per category, track utilization, and get alerts when limits are exceeded.',
+    insightsTitle: 'Dashboard & Insights',
+    insightsText: 'Visualize balances, income, expenses, and trends with interactive charts and analytics.',
+    recurringTitle: 'Recurring Expenses',
+    recurringText: 'Automate regular expenses with flexible scheduling and automatic transaction generation.',
+    categoriesTitle: 'Categories',
+    categoriesText: 'Organize your finances with system and custom categories, color coding, and easy editing.',
+    authenticationTitle: 'Authentication & Security',
+    authenticationText: 'Secure login, email verification, Google OAuth, and privacy-first data protection.',
+    localizationTitle: 'Localization & Accessibility',
+    localizationText: 'Full English and Spanish support, with accessibility features and responsive design for all devices.',
   },
   auth: {
     shell: {
@@ -62,8 +69,7 @@ export const en = {
     signUp: {
       eyebrow: 'Monity onboarding',
       title: 'Create your account and start tracking smarter',
-      description:
-        'Set up your workspace to manage accounts, record transactions, and stay on top of your monthly budgets.',
+      description: 'Set up your workspace to manage accounts, record transactions, and stay on top of your monthly budgets.',
       cardTitle: 'Create your account',
       cardText: 'Start organizing your money in one place with clear categories and actionable spending insights.',
       submit: 'Create account',
@@ -72,8 +78,7 @@ export const en = {
     verify: {
       eyebrow: 'Verify access',
       title: 'Confirm your email address',
-      description:
-        'Verify your account to unlock your dashboard and start tracking accounts, transactions, and budgets.',
+      description: 'Verify your account to unlock your dashboard and start tracking accounts, transactions, and budgets.',
       cardTitle: 'Verify your inbox',
       cardText: 'Enter your 6-digit code to finish setup and continue to your finance dashboard.',
       submit: 'Verify email',
@@ -349,8 +354,7 @@ export const en = {
     email: 'Email',
     emailHint: 'Email is managed by authentication and cannot be changed here yet.',
     futureReadyTitle: 'Future-ready structure',
-    futureReadyText:
-      'This page is structured to add avatar upload, password changes, and security settings without changing the sidebar.',
+    futureReadyText: 'This page is structured to add avatar upload, password changes, and security settings without changing the sidebar.',
     saveChanges: 'Save changes',
     saving: 'Saving...',
     currentIdentity: 'Current identity',
