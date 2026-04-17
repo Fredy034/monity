@@ -339,7 +339,7 @@ export function RecurringExpensesManager() {
 
               <div className='flex flex-wrap gap-2'>
                 <button type='button' className={financeUi.secondaryButton} onClick={() => beginEdit(item)}>
-                  {t('common.save')}
+                  {t('common.edit')}
                 </button>
                 <button
                   type='button'
