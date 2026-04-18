@@ -1,5 +1,6 @@
 import { ToastProvider } from '@/components/ui/toast-provider';
 import { getRequestLocale } from '@/lib/i18n/server';
+import { ThemeProvider } from '@/lib/theme/theme-provider';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -33,10 +34,10 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className='min-h-full flex flex-col bg-slate-50 text-slate-900'>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+      <body className='min-h-full flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50'>
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -14,8 +14,10 @@ const baseClassName =
 const variantClassNames: Record<ActionButtonVariant, string> = {
   primary:
     'border-emerald-600 bg-emerald-600 text-white shadow-[0_8px_20px_rgba(5,150,105,0.2)] hover:border-emerald-500 hover:bg-emerald-500',
-  secondary: 'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50',
-  danger: 'border-rose-200 bg-white text-rose-700 shadow-sm hover:border-rose-300 hover:bg-rose-50',
+  secondary:
+    'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800/70',
+  danger:
+    'border-rose-200 bg-white text-rose-700 shadow-sm hover:border-rose-300 hover:bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-300 dark:hover:border-rose-800 dark:hover:bg-rose-950/40',
 };
 
 export function ActionButton({

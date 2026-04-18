@@ -1,0 +1,38 @@
+export const financeUiDark = {
+  shellBackground:
+    'dark:min-h-screen dark:bg-[radial-gradient(circle_at_top,rgba(30,41,59,0.2),transparent_35%),linear-gradient(180deg,#0f172a_0%,#1a1f3a_100%)] min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.08),transparent_35%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-4 py-6 dark:text-slate-50 text-slate-900 sm:px-6 sm:py-8 lg:px-10',
+  panel:
+    'dark:rounded-3xl dark:border-slate-700 dark:bg-slate-800/40 dark:shadow-[0_24px_80px_rgba(0,0,0,0.3)] rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur sm:p-6',
+  panelSoft:
+    'dark:rounded-2xl dark:border-slate-700 dark:bg-slate-800/20 rounded-2xl border border-slate-200 bg-slate-50/70 p-4',
+  formCard:
+    'dark:rounded-xl dark:border-slate-700 dark:bg-slate-800/50 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5',
+  listCard:
+    'dark:min-w-0 dark:rounded-2xl dark:border-slate-700 dark:bg-slate-800/30 dark:transition dark:hover:border-slate-600 dark:hover:shadow-md min-w-0 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md',
+  listRow:
+    'dark:flex dark:min-w-0 dark:flex-wrap dark:items-start dark:justify-between dark:gap-2 dark:rounded-xl dark:border-slate-700 dark:bg-slate-800/20 dark:px-3 dark:py-2 dark:text-sm flex min-w-0 flex-wrap items-start justify-between gap-2 rounded-xl border border-slate-200 bg-gradient-to-r from-white to-slate-50/80 px-3 py-2 text-sm sm:flex-nowrap sm:items-center',
+  sectionTitle: 'dark:text-slate-400 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500',
+  label: 'dark:text-slate-300 mb-2 block text-sm font-medium text-slate-700',
+  input:
+    'dark:h-11 dark:w-full dark:rounded-xl dark:border-slate-700 dark:bg-slate-800/50 dark:px-3 dark:text-sm dark:text-slate-50 dark:outline-none dark:transition dark:placeholder:text-slate-500 dark:focus:border-emerald-500 dark:focus:bg-slate-700 dark:focus:ring-4 dark:focus:ring-emerald-500/15 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/15',
+  select:
+    'dark:h-11 dark:w-full dark:appearance-none dark:rounded-xl dark:border-slate-700 dark:bg-slate-800/50 dark:px-3 dark:text-sm dark:font-medium dark:text-slate-50 dark:outline-none dark:transition dark:hover:border-slate-600 dark:focus:border-emerald-500 dark:focus:bg-slate-700 dark:focus:ring-4 dark:focus:ring-emerald-500/15 h-11 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-900 outline-none transition hover:border-slate-300 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/15 [&>option]:bg-white [&>option]:py-2 [&>option]:text-slate-800 dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-50',
+  primaryButton:
+    'dark:inline-flex dark:h-11 dark:items-center dark:justify-center dark:rounded-xl dark:bg-emerald-600 dark:px-4 dark:text-sm dark:font-semibold dark:text-white dark:shadow-[0_10px_30px_rgba(5,150,105,0.25)] dark:transition dark:hover:bg-emerald-500 dark:disabled:cursor-not-allowed dark:disabled:opacity-60 inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(5,150,105,0.25)] transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60',
+  secondaryButton:
+    'dark:inline-flex dark:h-11 dark:items-center dark:justify-center dark:rounded-xl dark:border-slate-700 dark:bg-slate-800/30 dark:px-4 dark:text-sm dark:font-semibold dark:text-slate-300 dark:shadow-sm dark:transition dark:hover:border-slate-600 dark:hover:bg-slate-800/50 inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50',
+  dangerButton:
+    'dark:inline-flex dark:items-center dark:justify-center dark:rounded-lg dark:border-rose-900/50 dark:bg-rose-950/20 dark:px-3 dark:py-1.5 dark:text-sm dark:font-medium dark:text-rose-400 dark:transition dark:hover:bg-rose-950/40 inline-flex items-center justify-center rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-700 transition hover:bg-rose-50',
+  badge:
+    'dark:inline-flex dark:items-center dark:rounded-full dark:border-slate-700 dark:bg-slate-800/50 dark:px-2.5 dark:py-1 dark:text-xs dark:font-semibold dark:text-slate-400 inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600',
+  errorBanner:
+    'dark:rounded-2xl dark:border-rose-900/50 dark:bg-rose-950/20 dark:px-4 dark:py-3 dark:text-sm dark:text-rose-400 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700',
+  loadingWrap:
+    'dark:flex dark:items-center dark:gap-2 dark:rounded-xl dark:border-slate-700 dark:bg-slate-800/30 dark:px-3 dark:py-2 dark:text-sm dark:text-slate-400 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600',
+  spinner:
+    'dark:inline-block dark:h-4 dark:w-4 dark:animate-spin dark:rounded-full dark:border-2 dark:border-slate-600 dark:border-t-emerald-500 inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-emerald-600',
+  emptyState:
+    'dark:rounded-2xl dark:border-dashed dark:border-slate-700 dark:bg-slate-800/20 dark:px-4 dark:py-6 dark:text-center dark:text-sm dark:text-slate-400 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600',
+  helperText: 'dark:text-xs dark:text-slate-500 text-xs text-slate-500',
+  mutedText: 'dark:text-sm dark:text-slate-400 text-sm text-slate-600',
+};

@@ -30,7 +30,7 @@ export function LogoutButton({ className }: { className?: string }) {
       type='button'
       onClick={handleLogout}
       disabled={isPending}
-      className={`inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60 ${className ?? ''}`}
+      className={`inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800/70 ${className ?? ''}`}
     >
       {isPending ? t('auth.logout.signingOut') : t('auth.logout.signOut')}
     </button>

@@ -161,7 +161,7 @@ export function CategoriesManager() {
           <label className={financeUi.label}>{t('categories.color')}</label>
           <input
             type='color'
-            className='h-11 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-2'
+            className='h-11 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-2 dark:border-slate-700 dark:bg-slate-800/50'
             value={color}
             onChange={(event) => setColor(event.target.value)}
           />
@@ -194,8 +194,8 @@ export function CategoriesManager() {
             <div className='flex items-center gap-3'>
               <span className='h-3 w-3 rounded-full' style={{ backgroundColor: category.color ?? '#94A3B8' }} />
               <div>
-                <p className='font-semibold text-slate-900'>{category.name}</p>
-                <p className='text-xs uppercase tracking-wide text-slate-500'>
+                <p className='font-semibold text-slate-900 dark:text-slate-100'>{category.name}</p>
+                <p className='text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400'>
                   {category.type === 'income' ? t('dashboard.income') : t('dashboard.expense')}{' '}
                   {category.is_system ? `| ${t('categories.system')}` : `| ${t('categories.custom')}`}
                 </p>
@@ -225,11 +225,11 @@ export function CategoriesManager() {
                 aria-label={t('common.close')}
               />
 
-              <section className={`${financeUi.formCard} relative z-10 w-full max-w-lg`}>
+              <section className={`${financeUi.modalCard} relative z-10 w-full max-w-lg`}>
                 <div className='mb-4 flex items-start justify-between gap-3'>
                   <div>
-                    <h3 className='text-lg font-semibold text-slate-900'>{t('categories.editModalTitle')}</h3>
-                    <p className='mt-1 text-sm text-slate-600'>{t('categories.editModalSubtitle')}</p>
+                    <h3 className='text-lg font-semibold text-slate-900 dark:text-slate-100'>{t('categories.editModalTitle')}</h3>
+                    <p className='mt-1 text-sm text-slate-600 dark:text-slate-400'>{t('categories.editModalSubtitle')}</p>
                   </div>
                   <ActionButton type='button' variant='secondary' onClick={cancelEdit}>
                     {t('common.close')}
@@ -251,7 +251,7 @@ export function CategoriesManager() {
                     <label className={financeUi.label}>{t('categories.color')}</label>
                     <input
                       type='color'
-                      className='h-11 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-2'
+                      className='h-11 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-2 dark:border-slate-700 dark:bg-slate-800/50'
                       value={editingColor}
                       onChange={(event) => setEditingColor(event.target.value)}
                     />

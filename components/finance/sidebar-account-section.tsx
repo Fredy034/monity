@@ -27,9 +27,9 @@ export function SidebarAccountSection({ email = '', displayName = '', avatarUrl 
   const initials = getInitials(displayName ?? '', email);
 
   return (
-    <div className='mt-auto border-t border-slate-200 pt-4'>
-      <div className='rounded-2xl border border-slate-200 bg-slate-50/80 p-3'>
-        <p className='text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500'>
+    <div className='mt-auto border-t border-slate-200 pt-4 dark:border-slate-700'>
+      <div className='rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/40'>
+        <p className='text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400'>
           {t('profile.accountLabel')}
         </p>
 
@@ -49,8 +49,10 @@ export function SidebarAccountSection({ email = '', displayName = '', avatarUrl 
             )}
           </div>
           <div className='min-w-0'>
-            <p className='truncate text-sm font-semibold text-slate-900'>{displayName || t('profile.yourAccount')}</p>
-            {email ? <p className='truncate text-xs text-slate-500'>{email}</p> : null}
+            <p className='truncate text-sm font-semibold text-slate-900 dark:text-slate-100'>
+              {displayName || t('profile.yourAccount')}
+            </p>
+            {email ? <p className='truncate text-xs text-slate-500 dark:text-slate-400'>{email}</p> : null}
           </div>
         </div>
 

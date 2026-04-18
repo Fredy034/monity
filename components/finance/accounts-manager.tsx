@@ -167,8 +167,8 @@ export function AccountsManager() {
             className={`${financeUi.listCard} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}
           >
             <div className='min-w-0'>
-              <p className='font-semibold text-slate-900'>{account.name}</p>
-              <p className='text-sm text-slate-600'>
+              <p className='font-semibold text-slate-900 dark:text-slate-100'>{account.name}</p>
+              <p className='text-sm text-slate-600 dark:text-slate-400'>
                 {account.type.replace('_', ' ')} | {account.currency}
               </p>
               <p className='mt-1 text-sm font-medium text-emerald-600'>

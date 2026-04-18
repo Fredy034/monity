@@ -77,12 +77,12 @@ export function ProfileSettingsForm({ initialDisplayName, initialEmail, avatarUr
   return (
     <div className='grid gap-6 lg:grid-cols-[1fr_320px]'>
       <section className={financeUi.formCard}>
-        <div className='flex items-start justify-between gap-4 border-b border-slate-200 pb-4'>
+        <div className='flex items-start justify-between gap-4 border-b border-slate-200 pb-4 dark:border-slate-700'>
           <div>
-            <h2 className='text-lg font-semibold text-slate-950'>{t('profile.detailsTitle')}</h2>
-            <p className='mt-1 text-sm text-slate-600'>{t('profile.detailsText')}</p>
+            <h2 className='text-lg font-semibold text-slate-950 dark:text-slate-100'>{t('profile.detailsTitle')}</h2>
+            <p className='mt-1 text-sm text-slate-600 dark:text-slate-400'>{t('profile.detailsText')}</p>
           </div>
-          <div className='hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 sm:block'>
+          <div className='hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800/40 sm:block'>
             <div className='flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-emerald-100 text-sm font-semibold text-emerald-700'>
               {avatarUrl ? (
                 <img alt={t('profile.accountLabel')} className='h-full w-full object-cover' src={avatarUrl} />
@@ -110,12 +110,16 @@ export function ProfileSettingsForm({ initialDisplayName, initialEmail, avatarUr
 
           <div>
             <label className={financeUi.label}>{t('profile.email')}</label>
-            <input className={`${financeUi.input} cursor-not-allowed bg-slate-100`} value={initialEmail} readOnly />
-            <p className='mt-2 text-xs text-slate-500'>{t('profile.emailHint')}</p>
+            <input
+              className={`${financeUi.input} cursor-not-allowed bg-slate-100 dark:bg-slate-700/60 dark:text-slate-300`}
+              value={initialEmail}
+              readOnly
+            />
+            <p className='mt-2 text-xs text-slate-500 dark:text-slate-400'>{t('profile.emailHint')}</p>
           </div>
 
-          <div className='rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600'>
-            <p className='font-semibold text-slate-900'>{t('profile.futureReadyTitle')}</p>
+          <div className='rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-400'>
+            <p className='font-semibold text-slate-900 dark:text-slate-100'>{t('profile.futureReadyTitle')}</p>
             <p className='mt-1'>{t('profile.futureReadyText')}</p>
           </div>
 
@@ -142,15 +146,17 @@ export function ProfileSettingsForm({ initialDisplayName, initialEmail, avatarUr
               )}
             </div>
             <div className='min-w-0'>
-              <p className='truncate text-sm font-semibold text-slate-900'>{displayName || t('profile.yourAccount')}</p>
-              <p className='truncate text-xs text-slate-500'>{initialEmail}</p>
+              <p className='truncate text-sm font-semibold text-slate-900 dark:text-slate-100'>
+                {displayName || t('profile.yourAccount')}
+              </p>
+              <p className='truncate text-xs text-slate-500 dark:text-slate-400'>{initialEmail}</p>
             </div>
           </div>
         </div>
 
         <div className={financeUi.panelSoft}>
           <p className={financeUi.sectionTitle}>{t('profile.extensibility')}</p>
-          <ul className='mt-3 space-y-2 text-sm text-slate-600'>
+          <ul className='mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-400'>
             <li>{t('profile.extensibilityItem1')}</li>
             <li>{t('profile.extensibilityItem2')}</li>
             <li>{t('profile.extensibilityItem3')}</li>

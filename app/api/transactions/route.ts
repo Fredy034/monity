@@ -6,6 +6,43 @@ import { getErrorMessage, jsonError, readJsonBody } from '@/lib/insforge/api';
 import { createServerInsForgeClient } from '@/lib/insforge/client';
 import { getApiSessionContext, withSessionCookies } from '@/lib/insforge/route-session';
 
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 50;
+
+type TxCursor = {
+  transactionDate: string;
+  id: string;
+};
+
+function clampPageSize(raw: string | null) {
+  const parsed = Number(raw ?? DEFAULT_PAGE_SIZE);
+  if (!Number.isFinite(parsed)) return DEFAULT_PAGE_SIZE;
+  return Math.min(Math.max(Math.trunc(parsed), 1), MAX_PAGE_SIZE);
+}
+
+function parseAmountFilter(raw: string | null) {
+  if (!raw) return null;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed;
+}
+
+function decodeCursor(raw: string | null): TxCursor | null {
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8')) as Partial<TxCursor>;
+    if (!parsed.transactionDate || !parsed.id) return null;
+    return { transactionDate: parsed.transactionDate, id: parsed.id };
+  } catch {
+    return null;
+  }
+}
+
+function encodeCursor(cursor: TxCursor) {
+  return Buffer.from(JSON.stringify(cursor), 'utf8').toString('base64url');
+}
+
 async function verifyReferences(
   client: ReturnType<typeof createServerInsForgeClient>,
   userId: string,
@@ -43,18 +80,46 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const accountId = url.searchParams.get('accountId');
   const categoryId = url.searchParams.get('categoryId');
-  const limit = Number(url.searchParams.get('limit') ?? 50);
+  const filterType = url.searchParams.get('type');
+  const fromDate = url.searchParams.get('fromDate');
+  const toDate = url.searchParams.get('toDate');
+  const search = url.searchParams.get('search')?.trim();
+  const minAmount = parseAmountFilter(url.searchParams.get('minAmount'));
+  const maxAmount = parseAmountFilter(url.searchParams.get('maxAmount'));
+  const pageSize = clampPageSize(url.searchParams.get('pageSize'));
+  const cursor = decodeCursor(url.searchParams.get('cursor'));
+
+  if (url.searchParams.get('cursor') && !cursor) {
+    return jsonError(400, 'INVALID_CURSOR', 'The provided cursor is not valid.');
+  }
+
+  if (filterType && filterType !== 'income' && filterType !== 'expense') {
+    return jsonError(400, 'INVALID_FILTER', 'The selected transaction type is not valid.');
+  }
 
   let query = client.database
     .from('transactions')
     .select('id, account_id, category_id, type, amount, description, transaction_date, created_at, updated_at')
     .eq('user_id', session.user.id)
     .order('transaction_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 200) : 50);
+    .order('id', { ascending: false })
+    .limit(pageSize + 1);
 
   if (accountId) query = query.eq('account_id', accountId);
   if (categoryId) query = query.eq('category_id', categoryId);
+  if (filterType) query = query.eq('type', filterType);
+  if (fromDate) query = query.gte('transaction_date', fromDate);
+  if (toDate) query = query.lte('transaction_date', toDate);
+  if (search) query = query.ilike('description', `%${search}%`);
+  if (minAmount !== null) query = query.gte('amount', minAmount);
+  if (maxAmount !== null) query = query.lte('amount', maxAmount);
+
+  if (cursor) {
+    // Composite cursor keeps pagination stable across date ties.
+    query = query.or(
+      `transaction_date.lt.${cursor.transactionDate},and(transaction_date.eq.${cursor.transactionDate},id.lt.${cursor.id})`,
+    );
+  }
 
   const { data, error } = await query;
 
@@ -62,9 +127,30 @@ export async function GET(request: Request) {
     return jsonError(500, 'TRANSACTIONS_READ_FAILED', error.message);
   }
 
-  const normalized = (data ?? []).map((item) => ({ ...item, amount: Number(item.amount) }));
+  const rows = data ?? [];
+  const hasMore = rows.length > pageSize;
+  const pageRows = hasMore ? rows.slice(0, pageSize) : rows;
+  const normalized = pageRows.map((item) => ({ ...item, amount: Number(item.amount) }));
+  const lastItem = pageRows.at(-1);
+  const nextCursor =
+    hasMore && lastItem
+      ? encodeCursor({
+          transactionDate: lastItem.transaction_date,
+          id: lastItem.id,
+        })
+      : null;
 
-  return withSessionCookies(NextResponse.json({ data: normalized }), session);
+  return withSessionCookies(
+    NextResponse.json({
+      data: normalized,
+      page: {
+        pageSize,
+        nextCursor,
+        hasMore,
+      },
+    }),
+    session,
+  );
 }
 
 export async function POST(request: Request) {

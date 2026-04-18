@@ -1,8 +1,45 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Light theme colors */
+  --color-bg-primary: #f8fafc;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #f1f5f9;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #64748b;
+  --color-border: #e2e8f0;
+  --color-border-light: #cbd5e1;
+
+  /* Light theme - Charts and accents */
+  --color-chart-primary: #06b6d4;
+  --color-chart-secondary: #10b981;
+  --color-chart-tertiary: #f59e0b;
+}
+
+html.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+
+  /* Dark theme colors */
+  --color-bg-primary: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-bg-tertiary: #334155;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-tertiary: #94a3b8;
+  --color-border: #334155;
+  --color-border-light: #475569;
+
+  /* Dark theme - Charts and accents */
+  --color-chart-primary: #06b6d4;
+  --color-chart-secondary: #10b981;
+  --color-chart-tertiary: #f59e0b;
 }
 
 @theme inline {
@@ -41,4 +78,8 @@ a {
 
 ::selection {
   background: rgba(15, 23, 42, 0.12);
+}
+
+html.dark ::selection {
+  background: rgba(248, 250, 252, 0.12);
 }

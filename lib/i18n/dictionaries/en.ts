@@ -27,14 +27,16 @@ export const en = {
   home: {
     badge: 'Monity',
     heading: 'Take control of your money with clear accounts, transactions, and budgets.',
-    subheading: 'Monity helps you organize your accounts, track income and expenses, set monthly limits, and understand where your money goes in one focused dashboard.',
+    subheading:
+      'Monity helps you organize your accounts, track income and expenses, set monthly limits, and understand where your money goes in one focused dashboard.',
     createAccount: 'Create account',
     signIn: 'Sign in',
     included: 'Included',
     accountsTitle: 'Accounts & Balances',
     accountsText: 'Track multiple accounts (bank, cash, cards) with real-time balances and account management.',
     transactionsTitle: 'Transactions',
-    transactionsText: 'Add, edit, and filter income or expenses. Advanced search, full-screen editing, and category assignment.',
+    transactionsText:
+      'Add, edit, and filter income or expenses. Advanced search, full-screen editing, and category assignment.',
     budgetsTitle: 'Budgets',
     budgetsText: 'Set monthly budgets per category, track utilization, and get alerts when limits are exceeded.',
     insightsTitle: 'Dashboard & Insights',
@@ -46,7 +48,8 @@ export const en = {
     authenticationTitle: 'Authentication & Security',
     authenticationText: 'Secure login, email verification, Google OAuth, and privacy-first data protection.',
     localizationTitle: 'Localization & Accessibility',
-    localizationText: 'Full English and Spanish support, with accessibility features and responsive design for all devices.',
+    localizationText:
+      'Full English and Spanish support, with accessibility features and responsive design for all devices.',
   },
   auth: {
     shell: {
@@ -69,7 +72,8 @@ export const en = {
     signUp: {
       eyebrow: 'Monity onboarding',
       title: 'Create your account and start tracking smarter',
-      description: 'Set up your workspace to manage accounts, record transactions, and stay on top of your monthly budgets.',
+      description:
+        'Set up your workspace to manage accounts, record transactions, and stay on top of your monthly budgets.',
       cardTitle: 'Create your account',
       cardText: 'Start organizing your money in one place with clear categories and actionable spending insights.',
       submit: 'Create account',
@@ -78,7 +82,8 @@ export const en = {
     verify: {
       eyebrow: 'Verify access',
       title: 'Confirm your email address',
-      description: 'Verify your account to unlock your dashboard and start tracking accounts, transactions, and budgets.',
+      description:
+        'Verify your account to unlock your dashboard and start tracking accounts, transactions, and budgets.',
       cardTitle: 'Verify your inbox',
       cardText: 'Enter your 6-digit code to finish setup and continue to your finance dashboard.',
       submit: 'Verify email',
@@ -96,6 +101,7 @@ export const en = {
       namePlaceholder: 'Your name',
       password: 'Password',
       processing: 'Processing...',
+      redirectingToGoogle: 'Redirecting to Google...',
       orContinueWith: 'or continue with',
       continueWithGoogle: 'Continue with Google',
       authFailed: 'Authentication failed.',
@@ -163,6 +169,13 @@ export const en = {
     missingDetailsTitle: 'Missing transaction details',
     saveErrorTitle: 'Transaction save failed',
     loading: 'Loading dashboard data...',
+    exportTitle: 'Export dashboard',
+    exportPDF: 'Export to PDF',
+    exporting: 'Exporting...',
+    exportSuccessTitle: 'Dashboard exported',
+    exportSuccessDescription: 'Your dashboard has been successfully exported to PDF.',
+    exportErrorTitle: 'Export failed',
+    exportErrorDescription: 'Could not export dashboard to PDF. Please try again.',
   },
   accounts: {
     pageTitle: 'Accounts',
@@ -251,6 +264,8 @@ export const en = {
     category: 'Category',
     amount: 'Amount',
     date: 'Date',
+    income: 'Income',
+    expense: 'Expense',
     description: 'Description',
     descriptionPlaceholder: 'Description (optional)',
     addPanelTitle: 'Add transaction',
@@ -270,6 +285,8 @@ export const en = {
     clearFilters: 'Clear filters',
     add: 'Add',
     loading: 'Loading transactions...',
+    loadingMore: 'Loading more transactions...',
+    endOfList: 'You have reached the end of your transaction history.',
     empty: 'No transactions yet. Add one above to populate your history.',
     noDescription: 'No description',
     editModalTitle: 'Edit transaction',
@@ -294,6 +311,16 @@ export const en = {
     deleteSuccessTitle: 'Transaction deleted',
     deleteSuccessText: 'The transaction was removed.',
     unknownCategory: 'Uncategorized',
+    exportTitle: 'Export transactions',
+    exportPDF: 'Export to PDF',
+    exporting: 'Exporting...',
+    exportSuccessTitle: 'Transactions exported',
+    exportSuccessDescription: 'Your transactions have been successfully exported to PDF.',
+    exportErrorTitle: 'Export failed',
+    exportErrorDescription: 'Could not export transactions to PDF. Please try again.',
+    exportEmptyTitle: 'No transactions to export',
+    exportEmptyDescription: 'Please add some transactions or adjust your filters before exporting.',
+    total: 'Total',
   },
   recurring: {
     pageTitle: 'Recurring Expenses',
@@ -354,7 +381,8 @@ export const en = {
     email: 'Email',
     emailHint: 'Email is managed by authentication and cannot be changed here yet.',
     futureReadyTitle: 'Future-ready structure',
-    futureReadyText: 'This page is structured to add avatar upload, password changes, and security settings without changing the sidebar.',
+    futureReadyText:
+      'This page is structured to add avatar upload, password changes, and security settings without changing the sidebar.',
     saveChanges: 'Save changes',
     saving: 'Saving...',
     currentIdentity: 'Current identity',

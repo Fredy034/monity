@@ -312,17 +312,17 @@ export function RecurringExpensesManager() {
             <article key={item.id} className={`${financeUi.listCard} space-y-4`}>
               <div className='flex flex-wrap items-start justify-between gap-3'>
                 <div className='min-w-0'>
-                  <p className='truncate font-semibold text-slate-900'>{item.name}</p>
-                  <p className='text-sm text-slate-600'>
+                  <p className='truncate font-semibold text-slate-900 dark:text-slate-100'>{item.name}</p>
+                  <p className='text-sm text-slate-600 dark:text-slate-400'>
                     {t('recurring.amount')}:{' '}
                     {formatMoney(item.current_amount ?? 0, { locale, currency: amountCurrency })}
                   </p>
-                  <p className='text-sm text-slate-600'>
+                  <p className='text-sm text-slate-600 dark:text-slate-400'>
                     {t('recurring.account')}: {account?.name ?? t('recurring.unknownAccount')} |{' '}
                     {t('recurring.category')}: {category?.name ?? t('recurring.unknownCategory')}
                   </p>
                 </div>
-                <div className='text-right text-sm text-slate-600'>
+                <div className='text-right text-sm text-slate-600 dark:text-slate-400'>
                   <span
                     className={item.is_active ? financeUi.badge : `${financeUi.badge} border-amber-200 text-amber-700`}
                   >
@@ -351,7 +351,7 @@ export function RecurringExpensesManager() {
               </div>
 
               {editingId === item.id ? (
-                <div className='grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2 xl:grid-cols-3'>
+                <div className='grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/30 sm:grid-cols-2 xl:grid-cols-3'>
                   <div>
                     <label className={financeUi.label}>{t('recurring.name')}</label>
                     <input
@@ -424,18 +424,23 @@ export function RecurringExpensesManager() {
                 </div>
               ) : null}
 
-              <div className='rounded-2xl border border-slate-200 bg-slate-50 p-3'>
-                <p className='mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-slate-500'>
+              <div className='rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/30'>
+                <p className='mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400'>
                   {t('recurring.amountHistory')}
                 </p>
                 {item.amount_history.length === 0 ? (
-                  <p className='text-sm text-slate-600'>{t('recurring.noHistory')}</p>
+                  <p className='text-sm text-slate-600 dark:text-slate-400'>{t('recurring.noHistory')}</p>
                 ) : (
                   <div className='space-y-2'>
                     {item.amount_history.map((history) => (
-                      <div key={`${history.effective_from}-${history.created_at}`} className={financeUi.listRow}>
-                        <span>{formatMoney(history.amount, { locale, currency: amountCurrency })}</span>
-                        <span className='text-xs text-slate-500'>
+                      <div
+                        key={`${history.effective_from}-${history.created_at}`}
+                        className='flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-gradient-to-r from-white to-slate-50/80 px-3 py-2 text-sm dark:border-slate-700 dark:from-slate-800/70 dark:to-slate-800/45'
+                      >
+                        <span className='text-slate-900 dark:text-slate-100'>
+                          {formatMoney(history.amount, { locale, currency: amountCurrency })}
+                        </span>
+                        <span className='text-xs text-slate-500 dark:text-slate-400'>
                           {t('recurring.effectiveFrom')}: {history.effective_from}
                         </span>
                       </div>

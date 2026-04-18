@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { ActionButton } from '@/components/finance/action-button';
@@ -8,6 +8,7 @@ import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
 import { formatMoney } from '@/lib/finance/formatting';
+import { useTransactionExport } from '@/lib/finance/use-transaction-export';
 import { useI18n } from '@/lib/i18n/client';
 
 type Account = { id: string; name: string; currency: string; is_active: boolean };
@@ -22,17 +23,45 @@ type Tx = {
   transaction_date: string;
 };
 
+type TransactionsPagePayload = {
+  data?: Tx[];
+  page?: {
+    nextCursor?: string | null;
+    hasMore?: boolean;
+  };
+  message?: string;
+};
+
 const ADD_PANEL_STORAGE_KEY = 'monity.transactions.addPanelOpen';
 const FILTERS_PANEL_STORAGE_KEY = 'monity.transactions.filtersPanelOpen';
+const PAGE_SIZE = 10;
+
+function appendWithoutDuplicates(existing: Tx[], incoming: Tx[]) {
+  const seen = new Set(existing.map((tx) => tx.id));
+  const merged = [...existing];
+
+  for (const tx of incoming) {
+    if (seen.has(tx.id)) continue;
+    seen.add(tx.id);
+    merged.push(tx);
+  }
+
+  return merged;
+}
 
 export function TransactionsManager() {
   const { t, locale } = useI18n();
   const { addToast } = useToast();
+  const { exportTransactionsToPDF } = useTransactionExport();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Tx[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [accountId, setAccountId] = useState('');
@@ -58,6 +87,7 @@ export function TransactionsManager() {
   const [toDate, setToDate] = useState('');
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const filteredCategories = categories.filter((item) => item.type === type);
   const accountMap = useMemo(() => new Map(accounts.map((item) => [item.id, item])), [accounts]);
@@ -67,85 +97,104 @@ export function TransactionsManager() {
     return categories.filter((category) => category.type === filterType);
   }, [categories, filterType]);
 
-  const filteredTransactions = useMemo(() => {
-    const minAmountValue = minAmount.trim() ? Number(minAmount) : null;
-    const maxAmountValue = maxAmount.trim() ? Number(maxAmount) : null;
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+  const loadLookups = useCallback(async () => {
+    const [accountsRes, categoriesRes] = await Promise.all([fetch('/api/accounts'), fetch('/api/categories')]);
+    const [accountsPayload, categoriesPayload] = await Promise.all([accountsRes.json(), categoriesRes.json()]);
 
-    return transactions.filter((tx) => {
-      const category = categoryMap.get(tx.category_id);
-      const account = accountMap.get(tx.account_id);
-
-      if (filterType !== 'all' && tx.type !== filterType) return false;
-      if (filterCategoryId !== 'all' && tx.category_id !== filterCategoryId) return false;
-      if (fromDate && tx.transaction_date < fromDate) return false;
-      if (toDate && tx.transaction_date > toDate) return false;
-
-      if (minAmountValue !== null && Number.isFinite(minAmountValue) && tx.amount < minAmountValue) return false;
-      if (maxAmountValue !== null && Number.isFinite(maxAmountValue) && tx.amount > maxAmountValue) return false;
-
-      if (normalizedQuery) {
-        const haystack = [tx.description ?? '', category?.name ?? '', account?.name ?? ''].join(' ').toLowerCase();
-        if (!haystack.includes(normalizedQuery)) return false;
-      }
-
-      return true;
-    });
-  }, [
-    accountMap,
-    categoryMap,
-    filterCategoryId,
-    filterType,
-    fromDate,
-    maxAmount,
-    minAmount,
-    searchQuery,
-    toDate,
-    transactions,
-  ]);
-
-  const load = useCallback(async () => {
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      const [accountsRes, categoriesRes, transactionsRes] = await Promise.all([
-        fetch('/api/accounts'),
-        fetch('/api/categories'),
-        fetch('/api/transactions?limit=100'),
-      ]);
-
-      const [accountsPayload, categoriesPayload, transactionsPayload] = await Promise.all([
-        accountsRes.json(),
-        categoriesRes.json(),
-        transactionsRes.json(),
-      ]);
-
-      if (!accountsRes.ok || !categoriesRes.ok || !transactionsRes.ok) {
-        const message =
-          accountsPayload.message ??
-          categoriesPayload.message ??
-          transactionsPayload.message ??
-          t('transactions.loadFailed');
-        setError(message);
-        addToast({ title: t('transactions.loadErrorTitle'), description: message, variant: 'error' });
-        return;
-      }
-
-      const accountData = (accountsPayload.data ?? []).filter((item: Account) => item.is_active);
-      const categoryData = categoriesPayload.data ?? [];
-
-      setAccounts(accountData);
-      setCategories(categoryData);
-      setTransactions(transactionsPayload.data ?? []);
-    } finally {
-      setIsLoading(false);
+    if (!accountsRes.ok || !categoriesRes.ok) {
+      const message = accountsPayload.message ?? categoriesPayload.message ?? t('transactions.loadFailed');
+      setError(message);
+      addToast({ title: t('transactions.loadErrorTitle'), description: message, variant: 'error' });
+      return;
     }
+
+    const accountData = (accountsPayload.data ?? []).filter((item: Account) => item.is_active);
+    const categoryData = categoriesPayload.data ?? [];
+
+    setAccounts(accountData);
+    setCategories(categoryData);
   }, [addToast, t]);
 
+  const fetchTransactions = useCallback(
+    async ({ cursor, reset }: { cursor?: string | null; reset: boolean }) => {
+      if (reset) {
+        setIsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      setError(null);
+
+      try {
+        const params = new URLSearchParams();
+        params.set('pageSize', String(PAGE_SIZE));
+
+        if (cursor) params.set('cursor', cursor);
+        if (filterType !== 'all') params.set('type', filterType);
+        if (filterCategoryId !== 'all') params.set('categoryId', filterCategoryId);
+        if (fromDate) params.set('fromDate', fromDate);
+        if (toDate) params.set('toDate', toDate);
+        if (minAmount.trim()) params.set('minAmount', minAmount.trim());
+        if (maxAmount.trim()) params.set('maxAmount', maxAmount.trim());
+
+        const normalizedSearch = searchQuery.trim();
+        if (normalizedSearch) {
+          params.set('search', normalizedSearch);
+        }
+
+        const response = await fetch(`/api/transactions?${params.toString()}`);
+        const payload = (await response.json()) as TransactionsPagePayload;
+
+        if (!response.ok) {
+          const message = payload.message ?? t('transactions.loadFailed');
+          setError(message);
+          addToast({ title: t('transactions.loadErrorTitle'), description: message, variant: 'error' });
+          return;
+        }
+
+        const nextBatch = payload.data ?? [];
+        const nextPageCursor = payload.page?.nextCursor ?? null;
+        const nextHasMore = Boolean(payload.page?.hasMore);
+
+        setTransactions((prev) => (reset ? nextBatch : appendWithoutDuplicates(prev, nextBatch)));
+        setNextCursor(nextPageCursor);
+        setHasMore(nextHasMore);
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [addToast, filterCategoryId, filterType, fromDate, maxAmount, minAmount, searchQuery, t, toDate],
+  );
+
   useEffect(() => {
-    void load();
-  }, [load]);
+    void loadLookups();
+  }, [loadLookups]);
+
+  useEffect(() => {
+    void fetchTransactions({ reset: true });
+  }, [fetchTransactions]);
+
+  const loadMoreTransactions = useCallback(() => {
+    if (!hasMore || !nextCursor || isLoading || isLoadingMore) return;
+    void fetchTransactions({ cursor: nextCursor, reset: false });
+  }, [fetchTransactions, hasMore, isLoading, isLoadingMore, nextCursor]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        loadMoreTransactions();
+      },
+      { rootMargin: '220px 0px' },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [loadMoreTransactions]);
 
   useEffect(() => {
     setIsModalHostReady(true);
@@ -211,7 +260,7 @@ export function TransactionsManager() {
     setDescription('');
     setAmount('0');
     addToast({ title: t('transactions.createSuccessTitle'), description: t('transactions.createSuccessText') });
-    await load();
+    await fetchTransactions({ reset: true });
   }
 
   async function onDelete(id: string) {
@@ -225,7 +274,7 @@ export function TransactionsManager() {
     }
 
     addToast({ title: t('transactions.deleteSuccessTitle'), description: t('transactions.deleteSuccessText') });
-    await load();
+    await fetchTransactions({ reset: true });
   }
 
   function startEdit(tx: Tx) {
@@ -290,7 +339,7 @@ export function TransactionsManager() {
 
       addToast({ title: t('transactions.updateSuccessTitle'), description: t('transactions.updateSuccessText') });
       cancelEdit();
-      await load();
+      await fetchTransactions({ reset: true });
     } finally {
       setIsUpdating(false);
     }
@@ -304,6 +353,43 @@ export function TransactionsManager() {
     setToDate('');
     setMinAmount('');
     setMaxAmount('');
+  }
+
+  async function handleExport() {
+    if (transactions.length === 0) {
+      addToast({ 
+        title: t('transactions.exportEmptyTitle'), 
+        description: t('transactions.exportEmptyDescription'), 
+        variant: 'error' 
+      });
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      await exportTransactionsToPDF({
+        transactions,
+        accounts: accountMap,
+        categories: categoryMap,
+        locale,
+        formatMoney: (amount, currency) => formatMoney(amount, { locale, currency }),
+        t,
+      });
+      addToast({ 
+        title: t('transactions.exportSuccessTitle'), 
+        description: t('transactions.exportSuccessDescription'), 
+        variant: 'success' 
+      });
+    } catch (err) {
+      console.error('Export failed:', err);
+      addToast({ 
+        title: t('transactions.exportErrorTitle'), 
+        description: t('transactions.exportErrorDescription'), 
+        variant: 'error' 
+      });
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   return (
@@ -407,6 +493,14 @@ export function TransactionsManager() {
             <ActionButton type='button' variant='secondary' onClick={() => setIsFiltersPanelOpen((value) => !value)}>
               {isFiltersPanelOpen ? t('transactions.hideFiltersPanel') : t('transactions.showFiltersPanel')}
             </ActionButton>
+            <ActionButton 
+              type='button' 
+              variant='secondary' 
+              onClick={handleExport}
+              disabled={isExporting || transactions.length === 0}
+            >
+              {isExporting ? t('transactions.exporting') : t('transactions.exportPDF')}
+            </ActionButton>
           </div>
         </div>
 
@@ -505,18 +599,18 @@ export function TransactionsManager() {
       ) : null}
 
       <div className='space-y-3'>
-        {!isLoading && filteredTransactions.length === 0 ? (
+        {!isLoading && transactions.length === 0 ? (
           <div className={financeUi.emptyState}>{t('transactions.empty')}</div>
         ) : null}
-        {filteredTransactions.map((tx) => (
+        {transactions.map((tx) => (
           <article
             key={tx.id}
             className={`${financeUi.listCard} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}
           >
             <div className='min-w-0'>
-              <p className='font-semibold text-slate-900'>{tx.description || t('transactions.noDescription')}</p>
+              <p className='font-semibold text-slate-900 dark:text-slate-100'>{tx.description || t('transactions.noDescription')}</p>
               <div className='mt-1 flex flex-wrap items-center gap-2'>
-                <p className='text-sm text-slate-600'>{tx.transaction_date}</p>
+                <p className='text-sm text-slate-600 dark:text-slate-400'>{tx.transaction_date}</p>
                 <CategoryBadge
                   category={categoryMap.get(tx.category_id)}
                   fallbackLabel={t('transactions.unknownCategory')}
@@ -537,6 +631,19 @@ export function TransactionsManager() {
             </div>
           </article>
         ))}
+
+        {transactions.length > 0 ? <div ref={loadMoreRef} className='h-1 w-full' aria-hidden='true' /> : null}
+
+        {isLoadingMore ? (
+          <div className={financeUi.loadingWrap}>
+            <span className={financeUi.spinner} />
+            <span>{t('transactions.loadingMore')}</span>
+          </div>
+        ) : null}
+
+        {!isLoading && !hasMore && transactions.length > 0 ? (
+          <div className='text-center text-sm text-slate-500 dark:text-slate-400'>{t('transactions.endOfList')}</div>
+        ) : null}
       </div>
 
       {editingTx && isModalHostReady
@@ -549,7 +656,7 @@ export function TransactionsManager() {
                 aria-label={t('common.close')}
               />
 
-              <section className={`${financeUi.formCard} relative z-10 w-full max-w-xl`}>
+              <section className={`${financeUi.modalCard} relative z-10 w-full max-w-xl`}>
                 <div className='mb-4 flex items-start justify-between gap-3'>
                   <div>
                     <h3 className='text-lg font-semibold text-slate-900'>{t('transactions.editModalTitle')}</h3>
@@ -633,7 +740,7 @@ export function TransactionsManager() {
 
 function CategoryBadge({ category, fallbackLabel }: { category?: Category; fallbackLabel: string }) {
   return (
-    <span className='inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700'>
+    <span className='inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200'>
       <span className='h-1.5 w-1.5 rounded-full' style={{ backgroundColor: category?.color ?? '#94A3B8' }} />
       {category?.name ?? fallbackLabel}
     </span>

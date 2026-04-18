@@ -95,7 +95,7 @@ export function DashboardCharts({
       <article className={financeUi.formCard}>
         <header className='mb-3'>
           <h2 className={financeUi.sectionTitle}>{copy.incomeVsExpensesTitle}</h2>
-          <p className='mt-1 text-sm text-slate-500'>{copy.incomeVsExpensesSubtitle}</p>
+          <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{copy.incomeVsExpensesSubtitle}</p>
         </header>
 
         {hasFlowData ? (
@@ -123,7 +123,7 @@ export function DashboardCharts({
       <article className={financeUi.formCard}>
         <header className='mb-3'>
           <h2 className={financeUi.sectionTitle}>{copy.cumulativeBalanceTitle}</h2>
-          <p className='mt-1 text-sm text-slate-500'>{copy.cumulativeBalanceSubtitle}</p>
+          <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{copy.cumulativeBalanceSubtitle}</p>
         </header>
 
         {hasFlowData ? (
@@ -162,7 +162,7 @@ export function DashboardCharts({
       <article className={financeUi.formCard}>
         <header className='mb-3'>
           <h2 className={financeUi.sectionTitle}>{copy.spendingDistributionTitle}</h2>
-          <p className='mt-1 text-sm text-slate-500'>{copy.spendingDistributionSubtitle}</p>
+          <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{copy.spendingDistributionSubtitle}</p>
         </header>
 
         {hasCategoryData ? (
@@ -193,15 +193,18 @@ export function DashboardCharts({
             {/* Scrollable Legend Container */}
             <div className='w-full flex-1 space-y-2 pr-2 md:max-h-full md:overflow-y-auto custom-scrollbar'>
               {charts.spending_by_category.map((item) => (
-                <div key={item.category_id} className={financeUi.listRow}>
-                  <span className='inline-flex min-w-0 items-center gap-2 text-slate-800'>
+                <div
+                  key={item.category_id}
+                  className='flex min-w-0 flex-wrap items-start justify-between gap-2 rounded-xl border border-slate-200 bg-gradient-to-r from-white to-slate-50/80 px-3 py-2 text-sm dark:border-slate-700 dark:from-slate-800/70 dark:to-slate-800/45 sm:flex-nowrap sm:items-center'
+                >
+                  <span className='inline-flex min-w-0 items-center gap-2 text-slate-800 dark:text-slate-100'>
                     <span className='h-2.5 w-2.5 shrink-0 rounded-full' style={{ backgroundColor: item.color }} />
                     <span className='truncate' title={item.category_name}>
                       {item.category_name}
                     </span>
                   </span>
                   <span className='shrink-0 text-right'>
-                    <span className='block text-xs text-slate-500'>{item.percent.toFixed(1)}%</span>
+                    <span className='block text-xs text-slate-500 dark:text-slate-400'>{item.percent.toFixed(1)}%</span>
                     <span className='font-semibold text-amber-600'>
                       {formatMoney(item.spent, { locale, currency })}
                     </span>
@@ -218,7 +221,7 @@ export function DashboardCharts({
       <article className={financeUi.formCard}>
         <header className='mb-3'>
           <h2 className={financeUi.sectionTitle}>{copy.expensesByAccountTitle}</h2>
-          <p className='mt-1 text-sm text-slate-500'>{copy.expensesByAccountSubtitle}</p>
+          <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{copy.expensesByAccountSubtitle}</p>
         </header>
 
         {hasAccountExpenseData ? (

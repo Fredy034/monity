@@ -29,14 +29,17 @@ export function LanguageSwitcher({ className }: { className?: string }) {
 
   return (
     <label
-      className={`inline-flex max-w-full items-center gap-2 text-xs font-medium text-slate-600 ${className ?? ''}`}
+      className={`inline-flex max-w-full items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300 ${className ?? ''}`}
     >
       <span className='sr-only'>{t('common.language')}</span>
-      <span aria-hidden='true' className='hidden text-[11px] uppercase tracking-[0.16em] text-slate-500 sm:inline'>
+      <span
+        aria-hidden='true'
+        className='hidden text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 sm:inline'
+      >
         {t('common.language')}
       </span>
       <select
-        className='h-9 min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-slate-400 sm:w-auto'
+        className='h-9 min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-slate-500 sm:w-auto'
         aria-label={t('common.language')}
         value={currentLocale}
         onChange={(event) => onLocaleChange(event.target.value as AppLocale)}

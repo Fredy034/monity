@@ -1,10 +1,10 @@
 'use client';
 
+import googleLogo from '@/public/icons/google.svg';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
-import googleLogo from '@/public/icons/google.svg';
 
 import { useI18n } from '@/lib/i18n/client';
 import Image from 'next/image';
@@ -35,12 +35,14 @@ async function startGoogleOAuth(setError: (value: string | null) => void, fallba
 
     if (!response.ok || !payload.url) {
       setError(payload.message ?? payload.error ?? fallbackError);
-      return;
+      return false;
     }
 
     window.location.assign(payload.url);
+    return true;
   } catch {
     setError(fallbackError);
+    return false;
   }
 }
 
@@ -55,6 +57,7 @@ export function CredentialsForm({ mode, endpoint, submitLabel, footerHref, foote
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -103,7 +106,7 @@ export function CredentialsForm({ mode, endpoint, submitLabel, footerHref, foote
   return (
     <form className='space-y-5' onSubmit={handleSubmit}>
       <div>
-        <label className='mb-2 block text-sm font-medium text-slate-700' htmlFor='email'>
+        <label className='mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300' htmlFor='email'>
           {t('auth.form.email')}
         </label>
         <input
@@ -113,14 +116,14 @@ export function CredentialsForm({ mode, endpoint, submitLabel, footerHref, foote
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white'
+          className='h-12 w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-50 dark:focus:bg-slate-700 dark:focus:border-slate-500 bg-slate-50 px-4 text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white'
           placeholder={t('auth.form.emailPlaceholder')}
         />
       </div>
 
       {showName ? (
         <div>
-          <label className='mb-2 block text-sm font-medium text-slate-700' htmlFor='name'>
+          <label className='mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300' htmlFor='name'>
             {t('auth.form.name')}
           </label>
           <input
@@ -129,14 +132,14 @@ export function CredentialsForm({ mode, endpoint, submitLabel, footerHref, foote
             autoComplete='name'
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white'
+            className='h-12 w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-50 dark:focus:bg-slate-700 dark:focus:border-slate-500 bg-slate-50 px-4 text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white'
             placeholder={t('auth.form.namePlaceholder')}
           />
         </div>
       ) : null}
 
       <div>
-        <label className='mb-2 block text-sm font-medium text-slate-700' htmlFor='password'>
+        <label className='mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300' htmlFor='password'>
           {t('auth.form.password')}
         </label>
         <input
@@ -147,47 +150,71 @@ export function CredentialsForm({ mode, endpoint, submitLabel, footerHref, foote
           minLength={8}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white'
+          className='h-12 w-full rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-50 dark:focus:bg-slate-700 dark:focus:border-slate-500 bg-slate-50 px-4 text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white'
           placeholder='••••••••'
         />
       </div>
 
       {error ? (
-        <p className='rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'>{error}</p>
+        <p className='rounded-2xl border border-rose-200 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-400 bg-rose-50 px-4 py-3 text-sm text-rose-700'>
+          {error}
+        </p>
       ) : null}
 
       <button
         type='submit'
         disabled={isSubmitting}
-        className='inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60'
+        className='inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-950 dark:bg-emerald-600 dark:hover:bg-emerald-500 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60'
       >
+        {isSubmitting && (
+          <span className='mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent' />
+        )}
         {isSubmitting ? t('auth.form.processing') : submitLabel}
       </button>
 
       <div className='relative py-1 text-center'>
-        <span className='absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-200' />
-        <span className='relative inline-block bg-white px-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-400'>
+        <span className='absolute inset-x-0 top-1/2 h-px dark:bg-slate-700 -translate-y-1/2 bg-slate-200' />
+        <span className='relative inline-block dark:bg-slate-900 dark:text-slate-400 bg-white px-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-400'>
           {t('auth.form.orContinueWith')}
         </span>
       </div>
 
       <button
         type='button'
-        onClick={() => startGoogleOAuth(setError, t('auth.form.oauthStartFailed'))}
-        className='inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50'
+        disabled={isGoogleSubmitting}
+        onClick={async () => {
+          setIsGoogleSubmitting(true);
+          const started = await startGoogleOAuth(setError, t('auth.form.oauthStartFailed'));
+          if (!started) {
+            setIsGoogleSubmitting(false);
+          }
+        }}
+        className='inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 bg-white px-5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50'
       >
-        <Image src={googleLogo} alt='Google' width={18} height={18} />
-        {t('auth.form.continueWithGoogle')}
+        {isGoogleSubmitting ? (
+          <span className='inline-flex items-center gap-2'>
+            <span className='inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent' />
+            {t('auth.form.redirectingToGoogle')}
+          </span>
+        ) : (
+          <>
+            <Image src={googleLogo} alt='Google' width={18} height={18} />
+            {t('auth.form.continueWithGoogle')}
+          </>
+        )}
       </button>
 
-      <div className='flex items-center justify-between text-sm text-slate-600'>
+      <div className='flex items-center justify-between text-sm text-slate-600 dark:text-slate-400'>
         <Link
-          className='font-medium text-slate-900 underline decoration-slate-300 underline-offset-4'
+          className='font-medium text-slate-900 dark:text-slate-50 underline decoration-slate-300 dark:decoration-slate-700 underline-offset-4'
           href={footerHref.startsWith('/') ? withLocale(footerHref) : footerHref}
         >
           {footerLabel}
         </Link>
-        <Link className='text-slate-500 hover:text-slate-900' href={withLocale('/')}>
+        <Link
+          className='text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
+          href={withLocale('/')}
+        >
           {t('common.backHome')}
         </Link>
       </div>
