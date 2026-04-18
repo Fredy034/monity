@@ -2,7 +2,6 @@
 
 Monity is a secure personal finance tracker built with Next.js and InsForge.
 
-
 ## Main Features
 
 - **Accounts & Balances**: Track multiple accounts (bank, cash, cards) with real-time balances and account management.
@@ -27,7 +26,6 @@ Monity is a secure personal finance tracker built with Next.js and InsForge.
 - Tailwind CSS 4
 - InsForge SDK (`@insforge/sdk`)
 
-
 ## Latest Improvements (April 2026)
 
 - Dashboard quick add is collapsible and persisted in local storage.
@@ -45,37 +43,142 @@ Monity is a secure personal finance tracker built with Next.js and InsForge.
 - Dashboard analytics and charts improved for better insights.
 - Enhanced security and privacy-first data handling.
 
-
 ## Project Structure
 
 ```text
+Root
+├── AGENTS.md
+├── CLAUDE.md
+├── README.md
+├── eslint.config.mjs
+├── next.config.ts
+├── package.json
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
+├── postcss.config.mjs
+├── proxy.ts
+├── skills-lock.json
+└── tsconfig.json
+
 app/
-	api/
-		auth/                # auth and session endpoints
-		accounts/            # account CRUD
-		categories/          # category CRUD
-		transactions/        # transaction CRUD
-    recurring-expenses/  # recurring expense CRUD + generation workflow
-		budgets/             # budget CRUD
-		dashboard/           # analytics endpoint
-		user/me/             # profile read/update
-	sign-in|sign-up|verify-email/
-  accounts|transactions|recurring-expenses|categories|budgets|dashboard/
+  api/
+    auth/
+      login/route.ts
+      logout/route.ts
+      me/route.ts
+      oauth/google/
+        callback/route.ts
+        start/route.ts
+      refresh/route.ts
+      register/route.ts
+      resend-verification/route.ts
+      verify-email/route.ts
+    accounts/
+      [id]/route.ts
+      route.ts
+    budgets/
+      [id]/route.ts
+      route.ts
+    categories/
+      [id]/route.ts
+      route.ts
+    dashboard/route.ts
+    internal/recurring-expenses/run/route.ts
+    recurring-expenses/
+      [id]/route.ts
+      route.ts
+    transactions/
+      [id]/route.ts
+      route.ts
+    user/me/route.ts
+  accounts/page.tsx
+  budgets/page.tsx
+  categories/page.tsx
+  dashboard/page.tsx
+  globals.css
+  layout.tsx
+  page.tsx
+  recurring-expenses/page.tsx
+  settings/profile/page.tsx
+  sign-in/page.tsx
+  sign-up/page.tsx
+  transactions/page.tsx
+  verify-email/page.tsx
+  apple-icon.png
+  favicon.ico
+  icon.png
 
 components/
-	auth/                  # auth layouts/forms
-	finance/               # finance shell and managers
-	ui/                    # shared UI utilities (toasts)
+  auth/
+    auth-shell.tsx
+    credentials-form.tsx
+    logout-button.tsx
+    verification-form.tsx
+  finance/
+    accounts-manager.tsx
+    action-button.tsx
+    budgets-manager.tsx
+    categories-manager.tsx
+    dashboard-charts.tsx
+    dashboard-overview.tsx
+    finance-shell.tsx
+    profile-settings-form.tsx
+    recurring-expenses-manager.tsx
+    sidebar-account-section.tsx
+    styled-select.tsx
+    transactions-manager.tsx
+    ui-dark.ts
+    ui.ts
+  i18n/
+    language-switcher.tsx
+    theme-toggle.tsx
+  ui/
+    toast-provider.tsx
 
-insforge/migrations/
-	001_auth.sql           # user profile table + RLS + trigger
-	002_finance.sql        # finance tables + indexes + RLS + seed categories
-  003_recurring_expenses.sql # recurring expense tables, function, and policies
+insforge/
+  migrations/
+    001_auth.sql
+    002_finance.sql
+    003_recurring_expenses.sql
+    004_transactions_pagination_indexes.sql
 
 lib/
-	insforge/              # client/session/cookie/api helpers
-  finance/formatting.ts  # locale-aware money formatting
-	finance/validation.ts  # API payload parsing/validation
+  finance/
+    formatting.ts
+    pdf-export.ts
+    recurring.ts
+    use-dashboard-export.ts
+    use-transaction-export.ts
+    validation.ts
+  i18n/
+    client.ts
+    config.ts
+    index.ts
+    server.ts
+    dictionaries/
+      en.ts
+      es.ts
+  insforge/
+    api.ts
+    client.ts
+    cookies.ts
+    route-session.ts
+    session.ts
+  theme/
+    theme-provider.tsx
+
+public/
+  file.svg
+  globe.svg
+  image-guideline.png
+  monity-icon.png
+  monity-logo.png
+  monity-logo_black.png
+  next.svg
+  vercel.svg
+  window.svg
+  icons/
+    google.svg
 ```
 
 ## Project Image Guidelines
@@ -84,15 +187,15 @@ Brand assets live in `public/` and should be used consistently across app surfac
 
 Available files:
 
-- `public/monity-logo.png` and `public/monity-logo.webp`: primary logo (icon + wordmark) for light backgrounds.
-- `public/monity-logo_black.png` and `public/monity-logo_black.webp`: navy wordmark variant for neutral/light UI where stronger text contrast is needed.
+- `public/monity-logo.png`: primary logo (icon + wordmark) for light backgrounds.
+- `public/monity-logo_black.png`: navy wordmark variant for neutral/light UI where stronger text contrast is needed.
 - `public/file.svg`: primary SVG logo for scalable UI placements when vector output is preferred.
-- `public/monity-icon.png` and `public/monity-icon.webp`: icon-only mark for compact placements (favicon-like, app tiles, sidebar, avatar-style badges).
+- `public/monity-icon.png`: icon-only mark for compact placements (favicon-like, app tiles, sidebar, avatar-style badges).
 - `public/image-guideline.png`: reference board showing approved color and composition variants.
+- `public/icons/google.svg`: Google brand icon used in auth UI.
 
 Usage rules:
 
-- Prefer `.webp` in UI for better payload size; keep `.png` as fallback for environments that need it.
 - Prefer `.svg` for sharp rendering at varied sizes when no raster effects are required.
 - Do not stretch logos non-uniformly; preserve original aspect ratio.
 - Keep clear space around logos (at least the icon's smallest bar width on each side).
@@ -102,8 +205,8 @@ Usage rules:
 
 Implementation notes (Next.js):
 
-- Use `next/image` for raster assets (`.webp`, `.png`) to get automatic optimization.
-- Place static brand references in `public/` and load them via absolute paths (for example, `/monity-logo.webp`).
+- Use `next/image` for raster assets (`.png`) to get automatic optimization.
+- Place static brand references in `public/` and load them via absolute paths (for example, `/monity-logo.png`).
 
 ## Environment Variables
 
