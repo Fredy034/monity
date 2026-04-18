@@ -435,7 +435,7 @@ export function RecurringExpensesManager() {
                     {item.amount_history.map((history) => (
                       <div
                         key={`${history.effective_from}-${history.created_at}`}
-                        className='flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-gradient-to-r from-white to-slate-50/80 px-3 py-2 text-sm dark:border-slate-700 dark:from-slate-800/70 dark:to-slate-800/45'
+                        className='flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-linear-to-r from-white to-slate-50/80 px-3 py-2 text-sm dark:border-slate-700 dark:from-slate-800/70 dark:to-slate-800/45'
                       >
                         <span className='text-slate-900 dark:text-slate-100'>
                           {formatMoney(history.amount, { locale, currency: amountCurrency })}

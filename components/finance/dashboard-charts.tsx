@@ -195,7 +195,7 @@ export function DashboardCharts({
               {charts.spending_by_category.map((item) => (
                 <div
                   key={item.category_id}
-                  className='flex min-w-0 flex-wrap items-start justify-between gap-2 rounded-xl border border-slate-200 bg-gradient-to-r from-white to-slate-50/80 px-3 py-2 text-sm dark:border-slate-700 dark:from-slate-800/70 dark:to-slate-800/45 sm:flex-nowrap sm:items-center'
+                  className='flex min-w-0 flex-wrap items-start justify-between gap-2 rounded-xl border border-slate-200 bg-linear-to-r from-white to-slate-50/80 px-3 py-2 text-sm dark:border-slate-700 dark:from-slate-800/70 dark:to-slate-800/45 sm:flex-nowrap sm:items-center'
                 >
                   <span className='inline-flex min-w-0 items-center gap-2 text-slate-800 dark:text-slate-100'>
                     <span className='h-2.5 w-2.5 shrink-0 rounded-full' style={{ backgroundColor: item.color }} />
