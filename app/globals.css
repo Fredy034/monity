@@ -61,6 +61,7 @@ html.dark {
 html {
   height: 100%;
   background: var(--background);
+  scrollbar-gutter: stable;
 }
 
 body {
