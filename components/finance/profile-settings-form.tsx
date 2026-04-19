@@ -6,6 +6,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
 import { useI18n } from '@/lib/i18n/client';
+import Image from 'next/image';
 
 type ProfileSettingsFormProps = {
   initialDisplayName: string;
@@ -85,7 +86,7 @@ export function ProfileSettingsForm({ initialDisplayName, initialEmail, avatarUr
           <div className='hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800/40 sm:block'>
             <div className='flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-emerald-100 text-sm font-semibold text-emerald-700'>
               {avatarUrl ? (
-                <img alt={t('profile.accountLabel')} className='h-full w-full object-cover' src={avatarUrl} />
+                <Image alt={t('profile.accountLabel')} className='h-full w-full object-cover' src={avatarUrl} width={48} height={48} />
               ) : (
                 initials
               )}
@@ -118,10 +119,10 @@ export function ProfileSettingsForm({ initialDisplayName, initialEmail, avatarUr
             <p className='mt-2 text-xs text-slate-500 dark:text-slate-400'>{t('profile.emailHint')}</p>
           </div>
 
-          <div className='rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-400'>
+          {/* <div className='rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-400'>
             <p className='font-semibold text-slate-900 dark:text-slate-100'>{t('profile.futureReadyTitle')}</p>
             <p className='mt-1'>{t('profile.futureReadyText')}</p>
-          </div>
+          </div> */}
 
           <div className='flex flex-col gap-2 sm:flex-row sm:justify-end'>
             <button type='button' className={financeUi.secondaryButton} onClick={() => router.back()}>
@@ -140,7 +141,7 @@ export function ProfileSettingsForm({ initialDisplayName, initialEmail, avatarUr
           <div className='mt-3 flex items-center gap-3'>
             <div className='flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-emerald-100 text-sm font-semibold text-emerald-700'>
               {avatarUrl ? (
-                <img alt={t('profile.accountLabel')} className='h-full w-full object-cover' src={avatarUrl} />
+                <Image alt={t('profile.accountLabel')} className='h-full w-full object-cover' src={avatarUrl} width={44} height={44} />
               ) : (
                 initials
               )}
