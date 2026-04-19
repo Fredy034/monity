@@ -22,8 +22,10 @@ export default async function VerifyEmailPage() {
       description={t('auth.verify.description')}
     >
       <div className='mb-6'>
-        <h2 className='text-2xl font-semibold tracking-tight text-slate-950'>{t('auth.verify.cardTitle')}</h2>
-        <p className='mt-2 text-sm leading-6 text-slate-600'>{t('auth.verify.cardText')}</p>
+        <h2 className='text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-300'>
+          {t('auth.verify.cardTitle')}
+        </h2>
+        <p className='mt-2 text-sm leading-6 text-slate-600 '>{t('auth.verify.cardText')}</p>
       </div>
       <VerificationForm endpoint='/api/auth/verify-email' />
     </AuthShell>

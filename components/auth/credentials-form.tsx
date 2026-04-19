@@ -174,7 +174,7 @@ export function CredentialsForm({ mode, endpoint, submitLabel, footerHref, foote
 
       <div className='relative py-1 text-center'>
         <span className='absolute inset-x-0 top-1/2 h-px dark:bg-slate-700 -translate-y-1/2 bg-slate-200' />
-        <span className='relative inline-block dark:bg-slate-900 dark:text-slate-400 bg-white px-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-400'>
+        <span className='relative inline-block dark:bg-slate-800/40 dark:text-slate-400 bg-white px-3 text-xs font-medium uppercase tracking-[0.18em] text-slate-400'>
           {t('auth.form.orContinueWith')}
         </span>
       </div>

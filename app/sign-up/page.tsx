@@ -22,8 +22,10 @@ export default async function SignUpPage() {
       description={t('auth.signUp.description')}
     >
       <div className='mb-6'>
-        <h2 className='text-2xl font-semibold tracking-tight text-slate-950'>{t('auth.signUp.cardTitle')}</h2>
-        <p className='mt-2 text-sm leading-6 text-slate-600'>{t('auth.signUp.cardText')}</p>
+        <h2 className='text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-300'>
+          {t('auth.signUp.cardTitle')}
+        </h2>
+        <p className='mt-2 text-sm leading-6 text-slate-600 '>{t('auth.signUp.cardText')}</p>
       </div>
       <CredentialsForm
         mode='sign-up'

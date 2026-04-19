@@ -22,7 +22,9 @@ export default async function SignInPage() {
       description={t('auth.signIn.description')}
     >
       <div className='mb-6'>
-        <h2 className='text-2xl font-semibold tracking-tight text-slate-950'>{t('auth.signIn.cardTitle')}</h2>
+        <h2 className='text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-300'>
+          {t('auth.signIn.cardTitle')}
+        </h2>
         <p className='mt-2 text-sm leading-6 text-slate-600'>{t('auth.signIn.cardText')}</p>
       </div>
       <CredentialsForm
