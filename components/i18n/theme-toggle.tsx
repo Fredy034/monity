@@ -1,7 +1,15 @@
 'use client';
 
 import { useTheme } from '@/lib/theme/theme-provider';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+function useIsMounted() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
 
 function ThemeToggleInner({ className }: { className?: string }) {
   const { theme, toggleTheme } = useTheme();
@@ -34,11 +42,7 @@ function ThemeToggleInner({ className }: { className?: string }) {
 }
 
 export function ThemeToggle({ className }: { className?: string }) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const isMounted = useIsMounted();
 
   if (!isMounted) {
     return null;

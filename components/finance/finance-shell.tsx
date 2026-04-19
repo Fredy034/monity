@@ -88,8 +88,8 @@ export function FinanceShell({
               </h1>
               {subtitle ? <p className='mt-2 text-sm text-slate-600 dark:text-slate-400'>{subtitle}</p> : null}
             </div>
-            <div className='flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end'>
-              <LanguageSwitcher className='rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300 bg-white px-2 py-1 shadow-sm' />
+            <div className='flex w-full flex-wrap items-center gap-1 sm:w-auto sm:justify-end'>
+              <LanguageSwitcher className='dark:text-slate-300 px-2 py-1' />
               <ThemeToggle />
               <button
                 type='button'

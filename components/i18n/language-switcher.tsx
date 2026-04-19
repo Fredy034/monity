@@ -31,7 +31,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
     <label
       className={`inline-flex max-w-full items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300 ${className ?? ''}`}
     >
-      <span className='sr-only'>{t('common.language')}</span>
+      <span className='sr-only'>{t('common.language')}1</span>
       <span
         aria-hidden='true'
         className='hidden text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400 sm:inline'

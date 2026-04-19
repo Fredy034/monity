@@ -19,8 +19,8 @@ export default async function HomePage() {
 
   return (
     <main className='relative flex min-h-dvh flex-col overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.08),transparent_35%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-4 pb-8 pt-20 text-slate-900 transition-colors duration-300 dark:bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.12),transparent_35%),linear-gradient(180deg,#020617_0%,#0f172a_100%)] dark:text-slate-50 sm:px-8 sm:pb-10 sm:pt-24 lg:px-12 lg:pt-28'>
-      <div className='absolute right-4 top-4 z-10 flex items-center gap-2 sm:right-8 sm:top-8 lg:right-12 lg:top-10'>
-        <LanguageSwitcher className='rounded-xl border border-slate-200 bg-white/95 px-2 py-1 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/90' />
+      <div className='absolute right-4 top-4 z-10 flex items-center gap-1 sm:right-8 sm:top-8 lg:right-12 lg:top-10'>
+        <LanguageSwitcher className='dark:text-slate-300 px-2 py-1' />
         <ThemeToggle />
       </div>
 
