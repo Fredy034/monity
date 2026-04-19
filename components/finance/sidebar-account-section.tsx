@@ -28,7 +28,7 @@ export function SidebarAccountSection({ email = '', displayName = '', avatarUrl 
 
   return (
     <div className='mt-auto border-t border-slate-200 pt-4 dark:border-slate-700'>
-      <div className='rounded-2xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/40'>
+      <div className='bg-transparent '>
         <p className='text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400'>
           {t('profile.accountLabel')}
         </p>

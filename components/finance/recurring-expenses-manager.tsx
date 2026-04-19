@@ -424,7 +424,7 @@ export function RecurringExpensesManager() {
                 </div>
               ) : null}
 
-              <div className='rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/30'>
+              <div className='bg-transparent'>
                 <p className='mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400'>
                   {t('recurring.amountHistory')}
                 </p>
@@ -435,7 +435,7 @@ export function RecurringExpensesManager() {
                     {item.amount_history.map((history) => (
                       <div
                         key={`${history.effective_from}-${history.created_at}`}
-                        className='flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-linear-to-r from-white to-slate-50/80 px-3 py-2 text-sm dark:border-slate-700 dark:from-slate-800/70 dark:to-slate-800/45'
+                        className='flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-linear-to-r from-white to-slate-50/80 px-3 py-2 text-sm dark:border-slate-700 dark:from-slate-800/70 dark:to-slate-800/45'
                       >
                         <span className='text-slate-900 dark:text-slate-100'>
                           {formatMoney(history.amount, { locale, currency: amountCurrency })}
