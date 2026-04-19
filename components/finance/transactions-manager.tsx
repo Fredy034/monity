@@ -35,6 +35,7 @@ type TransactionsPagePayload = {
 const ADD_PANEL_STORAGE_KEY = 'monity.transactions.addPanelOpen';
 const FILTERS_PANEL_STORAGE_KEY = 'monity.transactions.filtersPanelOpen';
 const PAGE_SIZE = 10;
+const SEARCH_DEBOUNCE_MS = 450;
 
 function appendWithoutDuplicates(existing: Tx[], incoming: Tx[]) {
   const seen = new Set(existing.map((tx) => tx.id));
@@ -81,6 +82,7 @@ export function TransactionsManager() {
   const [hasLoadedPanelPreferences, setHasLoadedPanelPreferences] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [filterCategoryId, setFilterCategoryId] = useState('all');
   const [fromDate, setFromDate] = useState('');
@@ -137,7 +139,7 @@ export function TransactionsManager() {
         if (minAmount.trim()) params.set('minAmount', minAmount.trim());
         if (maxAmount.trim()) params.set('maxAmount', maxAmount.trim());
 
-        const normalizedSearch = searchQuery.trim();
+        const normalizedSearch = debouncedSearchQuery.trim();
         if (normalizedSearch) {
           params.set('search', normalizedSearch);
         }
@@ -164,7 +166,7 @@ export function TransactionsManager() {
         setIsLoadingMore(false);
       }
     },
-    [addToast, filterCategoryId, filterType, fromDate, maxAmount, minAmount, searchQuery, t, toDate],
+    [addToast, debouncedSearchQuery, filterCategoryId, filterType, fromDate, maxAmount, minAmount, t, toDate],
   );
 
   useEffect(() => {
@@ -215,6 +217,14 @@ export function TransactionsManager() {
     window.localStorage.setItem(ADD_PANEL_STORAGE_KEY, isAddPanelOpen ? '1' : '0');
     window.localStorage.setItem(FILTERS_PANEL_STORAGE_KEY, isFiltersPanelOpen ? '1' : '0');
   }, [hasLoadedPanelPreferences, isAddPanelOpen, isFiltersPanelOpen]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   async function onCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -357,10 +367,10 @@ export function TransactionsManager() {
 
   async function handleExport() {
     if (transactions.length === 0) {
-      addToast({ 
-        title: t('transactions.exportEmptyTitle'), 
-        description: t('transactions.exportEmptyDescription'), 
-        variant: 'error' 
+      addToast({
+        title: t('transactions.exportEmptyTitle'),
+        description: t('transactions.exportEmptyDescription'),
+        variant: 'error',
       });
       return;
     }
@@ -375,17 +385,17 @@ export function TransactionsManager() {
         formatMoney: (amount, currency) => formatMoney(amount, { locale, currency }),
         t,
       });
-      addToast({ 
-        title: t('transactions.exportSuccessTitle'), 
-        description: t('transactions.exportSuccessDescription'), 
-        variant: 'success' 
+      addToast({
+        title: t('transactions.exportSuccessTitle'),
+        description: t('transactions.exportSuccessDescription'),
+        variant: 'success',
       });
     } catch (err) {
       console.error('Export failed:', err);
-      addToast({ 
-        title: t('transactions.exportErrorTitle'), 
-        description: t('transactions.exportErrorDescription'), 
-        variant: 'error' 
+      addToast({
+        title: t('transactions.exportErrorTitle'),
+        description: t('transactions.exportErrorDescription'),
+        variant: 'error',
       });
     } finally {
       setIsExporting(false);
@@ -493,9 +503,9 @@ export function TransactionsManager() {
             <ActionButton type='button' variant='secondary' onClick={() => setIsFiltersPanelOpen((value) => !value)}>
               {isFiltersPanelOpen ? t('transactions.hideFiltersPanel') : t('transactions.showFiltersPanel')}
             </ActionButton>
-            <ActionButton 
-              type='button' 
-              variant='secondary' 
+            <ActionButton
+              type='button'
+              variant='secondary'
               onClick={handleExport}
               disabled={isExporting || transactions.length === 0}
             >
@@ -608,7 +618,9 @@ export function TransactionsManager() {
             className={`${financeUi.listCard} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}
           >
             <div className='min-w-0'>
-              <p className='font-semibold text-slate-900 dark:text-slate-100'>{tx.description || t('transactions.noDescription')}</p>
+              <p className='font-semibold text-slate-900 dark:text-slate-100'>
+                {tx.description || t('transactions.noDescription')}
+              </p>
               <div className='mt-1 flex flex-wrap items-center gap-2'>
                 <p className='text-sm text-slate-600 dark:text-slate-400'>{tx.transaction_date}</p>
                 <CategoryBadge
