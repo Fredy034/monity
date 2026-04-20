@@ -22,7 +22,7 @@ export function AuthShell({
 
   return (
     <main className='relative flex min-h-dvh flex-col overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.14),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(30,41,59,0.2),transparent_40%),linear-gradient(180deg,#0f172a_0%,#1a1f3a_100%)] px-4 pb-8 pt-20 text-slate-900 dark:text-slate-50 sm:px-8 sm:pb-10 sm:pt-24 lg:px-12 lg:pt-28'>
-      <div className='absolute right-4 top-4 z-10 flex gap-1 sm:right-8 sm:top-8 lg:right-12 lg:top-10'>
+      <div className='absolute right-4 top-4 z-10 flex items-center gap-1 sm:right-8 sm:top-8 lg:right-12 lg:top-10'>
         <LanguageSwitcher className='dark:text-slate-300 px-2 py-1' />
         <ThemeToggle />
       </div>
