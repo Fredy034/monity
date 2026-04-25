@@ -84,16 +84,9 @@ export function createPDF(orientation: 'portrait' | 'landscape' = 'portrait') {
  */
 export async function exportTableToPDF(
   tableElement: HTMLElement,
-  options: PDFExportOptions & { includeHeader?: boolean; includeFooter?: boolean },
+  options: PDFExportOptions & { includeFooter?: boolean },
 ): Promise<void> {
-  const {
-    filename,
-    title,
-    orientation = 'portrait',
-    marginMm = 10,
-    includeHeader = true,
-    includeFooter = true,
-  } = options;
+  const { filename, title, orientation = 'portrait', marginMm = 10, includeFooter = true } = options;
 
   try {
     const pdf = createPDF(orientation);

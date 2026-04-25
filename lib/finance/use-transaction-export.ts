@@ -1,5 +1,6 @@
 import { exportTableToPDF, generateFilename } from '@/lib/finance/pdf-export';
 import { format } from 'date-fns';
+import { es as dateFnsLocaleEs } from 'date-fns/locale';
 import { useCallback } from 'react';
 
 export interface TransactionExportOptions {
@@ -57,7 +58,7 @@ export function useTransactionExport() {
                     (tx) => `
                   <tr style="border-bottom: 1px solid #e2e8f0;">
                     <td style="padding: 8px; color: #0f172a;">
-                      ${format(new Date(tx.transaction_date), 'MMM dd, yyyy', { locale: locale === 'es' ? require('date-fns/locale/es') : undefined })}
+                      ${format(new Date(tx.transaction_date), 'MMM dd, yyyy', { locale: locale === 'es' ? dateFnsLocaleEs : undefined })}
                     </td>
                     <td style="padding: 8px; color: #0f172a;">
                       ${accounts.get(tx.account_id)?.name || '-'}
