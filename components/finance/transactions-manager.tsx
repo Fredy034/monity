@@ -671,8 +671,8 @@ export function TransactionsManager() {
               <section className={`${financeUi.modalCard} relative z-10 w-full max-w-xl`}>
                 <div className='mb-4 flex items-start justify-between gap-3'>
                   <div>
-                    <h3 className='text-lg font-semibold text-slate-900'>{t('transactions.editModalTitle')}</h3>
-                    <p className='mt-1 text-sm text-slate-600'>{t('transactions.editModalSubtitle')}</p>
+                    <h3 className='text-lg font-semibold text-slate-900 dark:text-slate-100'>{t('transactions.editModalTitle')}</h3>
+                    <p className='mt-1 text-sm text-slate-600 dark:text-slate-400'>{t('transactions.editModalSubtitle')}</p>
                   </div>
                   <ActionButton type='button' variant='secondary' onClick={cancelEdit}>
                     {t('common.close')}

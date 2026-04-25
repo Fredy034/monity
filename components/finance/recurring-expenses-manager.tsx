@@ -310,8 +310,8 @@ export function RecurringExpensesManager() {
 
           return (
             <article key={item.id} className={`${financeUi.listCard} space-y-4`}>
-              <div className='flex flex-wrap items-start justify-between gap-3'>
-                <div className='min-w-0'>
+              <div className='flex flex-wrap items-start justify-between gap-6 sm:gap-3'>
+                <div className='min-w-0 w-full sm:w-auto'>
                   <p className='truncate font-semibold text-slate-900 dark:text-slate-100'>{item.name}</p>
                   <p className='text-sm text-slate-600 dark:text-slate-400'>
                     {t('recurring.amount')}:{' '}
@@ -322,7 +322,7 @@ export function RecurringExpensesManager() {
                     {t('recurring.category')}: {category?.name ?? t('recurring.unknownCategory')}
                   </p>
                 </div>
-                <div className='text-right text-sm text-slate-600 dark:text-slate-400'>
+                <div className='text-right text-sm text-slate-600 dark:text-slate-400 w-full sm:w-auto'>
                   <span
                     className={item.is_active ? financeUi.badge : `${financeUi.badge} border-amber-200 text-amber-700`}
                   >

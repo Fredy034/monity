@@ -93,7 +93,7 @@ export function FinanceShell({
               <ThemeToggle />
               <button
                 type='button'
-                className='inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 lg:hidden'
+                className='ml-2 inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 lg:hidden'
                 onClick={() => setIsSidebarOpen(true)}
                 aria-label={t('nav.openNavigation')}
               >
@@ -111,12 +111,12 @@ export function FinanceShell({
         <div className='fixed inset-0 z-50 lg:hidden'>
           <button
             type='button'
-            className='absolute inset-0 bg-slate-900/35 backdrop-blur-[1px]'
+            className='absolute inset-0 bg-slate-900/35 backdrop-blur-[2px]'
             onClick={closeSidebar}
             aria-label={t('nav.closeNavigation')}
           />
 
-          <aside className='absolute inset-y-0 left-0 flex w-[min(86vw,320px)] flex-col border-r border-slate-200 bg-white p-4 shadow-[0_24px_80px_rgba(15,23,42,0.2)]'>
+          <aside className='absolute inset-y-0 left-0 flex w-[min(86vw,320px)] flex-col border-r border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.08)] dark:shadow-[0_24px_80px_rgba(0,0,0,0.3)]'>
             <div className='mb-2 flex items-center justify-between'>
               <Image
                 src='/monity-logo_black.png'
@@ -128,7 +128,7 @@ export function FinanceShell({
               />
               <button
                 type='button'
-                className='inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-2.5 text-sm text-slate-600'
+                className='inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 px-2.5 text-sm text-slate-600'
                 onClick={closeSidebar}
               >
                 {t('common.close')}
