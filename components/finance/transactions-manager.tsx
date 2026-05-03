@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { ActionButton } from '@/components/finance/action-button';
+import { DeleteConfirmDialog } from '@/components/finance/delete-confirm-dialog';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
@@ -76,7 +77,9 @@ export function TransactionsManager() {
   const [editingDescription, setEditingDescription] = useState('');
   const [editingDate, setEditingDate] = useState(new Date().toISOString().slice(0, 10));
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isModalHostReady, setIsModalHostReady] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Tx | null>(null);
   const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
   const [isFiltersPanelOpen, setIsFiltersPanelOpen] = useState(false);
   const [hasLoadedPanelPreferences, setHasLoadedPanelPreferences] = useState(false);
@@ -273,18 +276,26 @@ export function TransactionsManager() {
     await fetchTransactions({ reset: true });
   }
 
-  async function onDelete(id: string) {
-    const response = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
-    if (!response.ok) {
-      const payload = await response.json();
-      const message = payload.message ?? t('transactions.deleteFailed');
-      setError(message);
-      addToast({ title: t('transactions.deleteErrorTitle'), description: message, variant: 'error' });
-      return;
-    }
+  async function onDeleteConfirm() {
+    if (!deleteTarget || isDeleting) return;
 
-    addToast({ title: t('transactions.deleteSuccessTitle'), description: t('transactions.deleteSuccessText') });
-    await fetchTransactions({ reset: true });
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/transactions/${deleteTarget.id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        const payload = await response.json();
+        const message = payload.message ?? t('transactions.deleteFailed');
+        setError(message);
+        addToast({ title: t('transactions.deleteErrorTitle'), description: message, variant: 'error' });
+        return;
+      }
+
+      setDeleteTarget(null);
+      addToast({ title: t('transactions.deleteSuccessTitle'), description: t('transactions.deleteSuccessText') });
+      await fetchTransactions({ reset: true });
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   function startEdit(tx: Tx) {
@@ -637,7 +648,13 @@ export function TransactionsManager() {
               <ActionButton type='button' variant='secondary' fullWidthOnMobile onClick={() => startEdit(tx)}>
                 {t('common.edit')}
               </ActionButton>
-              <ActionButton type='button' variant='danger' fullWidthOnMobile onClick={() => onDelete(tx.id)}>
+              <ActionButton
+                type='button'
+                variant='danger'
+                fullWidthOnMobile
+                onClick={() => setDeleteTarget(tx)}
+                disabled={isDeleting}
+              >
                 {t('common.delete')}
               </ActionButton>
             </div>
@@ -671,8 +688,12 @@ export function TransactionsManager() {
               <section className={`${financeUi.modalCard} relative z-10 w-full max-w-xl`}>
                 <div className='mb-4 flex items-start justify-between gap-3'>
                   <div>
-                    <h3 className='text-lg font-semibold text-slate-900 dark:text-slate-100'>{t('transactions.editModalTitle')}</h3>
-                    <p className='mt-1 text-sm text-slate-600 dark:text-slate-400'>{t('transactions.editModalSubtitle')}</p>
+                    <h3 className='text-lg font-semibold text-slate-900 dark:text-slate-100'>
+                      {t('transactions.editModalTitle')}
+                    </h3>
+                    <p className='mt-1 text-sm text-slate-600 dark:text-slate-400'>
+                      {t('transactions.editModalSubtitle')}
+                    </p>
                   </div>
                   <ActionButton type='button' variant='secondary' onClick={cancelEdit}>
                     {t('common.close')}
@@ -746,6 +767,24 @@ export function TransactionsManager() {
             document.body,
           )
         : null}
+
+      <DeleteConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        title={t('transactions.deleteConfirmTitle')}
+        description={t('transactions.deleteConfirmDescription')}
+        impact={t('transactions.deleteConfirmImpact')}
+        resourceLabel={t('transactions.deleteConfirmResourceLabel')}
+        resourceName={deleteTarget?.description || t('transactions.noDescription')}
+        confirmLabel={isDeleting ? t('transactions.deleteInProgress') : t('transactions.deleteConfirmAction')}
+        cancelLabel={t('common.cancel')}
+        closeLabel={t('common.close')}
+        isSubmitting={isDeleting}
+        onCancel={() => {
+          if (isDeleting) return;
+          setDeleteTarget(null);
+        }}
+        onConfirm={onDeleteConfirm}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { DeleteConfirmDialog } from '@/components/finance/delete-confirm-dialog';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
@@ -36,6 +37,8 @@ export function BudgetsManager() {
   const [limitAmount, setLimitAmount] = useState('0');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Budget | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const expenseCategories = useMemo(() => categories.filter((item) => item.type === 'expense'), [categories]);
 
@@ -97,18 +100,26 @@ export function BudgetsManager() {
     await load();
   }
 
-  async function onDelete(id: string) {
-    const response = await fetch(`/api/budgets/${id}`, { method: 'DELETE' });
-    if (!response.ok) {
-      const payload = await response.json();
-      const message = payload.message ?? t('budgets.deleteFailed');
-      setError(message);
-      addToast({ title: t('budgets.deleteErrorTitle'), description: message, variant: 'error' });
-      return;
-    }
+  async function onDeleteConfirm() {
+    if (!deleteTarget || isDeleting) return;
 
-    addToast({ title: t('budgets.deleteSuccessTitle'), description: t('budgets.deleteSuccessText') });
-    await load();
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/budgets/${deleteTarget.id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        const payload = await response.json();
+        const message = payload.message ?? t('budgets.deleteFailed');
+        setError(message);
+        addToast({ title: t('budgets.deleteErrorTitle'), description: message, variant: 'error' });
+        return;
+      }
+
+      setDeleteTarget(null);
+      addToast({ title: t('budgets.deleteSuccessTitle'), description: t('budgets.deleteSuccessText') });
+      await load();
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   return (
@@ -185,7 +196,8 @@ export function BudgetsManager() {
                 <button
                   type='button'
                   className={`${financeUi.dangerButton} w-full sm:w-auto`}
-                  onClick={() => onDelete(budget.id)}
+                  onClick={() => setDeleteTarget(budget)}
+                  disabled={isDeleting}
                 >
                   {t('common.delete')}
                 </button>
@@ -194,6 +206,24 @@ export function BudgetsManager() {
           );
         })}
       </div>
+
+      <DeleteConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        title={t('budgets.deleteConfirmTitle')}
+        description={t('budgets.deleteConfirmDescription')}
+        impact={t('budgets.deleteConfirmImpact')}
+        resourceLabel={t('budgets.deleteConfirmResourceLabel')}
+        resourceName={deleteTarget ? `${deleteTarget.period_month}` : ''}
+        confirmLabel={isDeleting ? t('budgets.deleteInProgress') : t('budgets.deleteConfirmAction')}
+        cancelLabel={t('common.cancel')}
+        closeLabel={t('common.close')}
+        isSubmitting={isDeleting}
+        onCancel={() => {
+          if (isDeleting) return;
+          setDeleteTarget(null);
+        }}
+        onConfirm={onDeleteConfirm}
+      />
     </div>
   );
 }

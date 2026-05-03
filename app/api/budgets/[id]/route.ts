@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { validateBudgetDelete } from '@/lib/finance/delete-validation';
 import { parseBudgetPayload } from '@/lib/finance/validation';
 import { getErrorMessage, jsonError, readJsonBody } from '@/lib/insforge/api';
 import { getApiSessionContext, withSessionCookies } from '@/lib/insforge/route-session';
@@ -43,10 +44,15 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const { client, session } = auth.ctx;
   const { id } = await params;
 
+  const validation = await validateBudgetDelete(client, session.user.id, id);
+  if (!validation.ok) {
+    return jsonError(validation.status, validation.code, validation.message, validation.nextActions);
+  }
+
   const { error } = await client.database.from('budgets').delete().eq('id', id).eq('user_id', session.user.id);
 
   if (error) {
-    return jsonError(404, 'BUDGET_DELETE_FAILED', error.message);
+    return jsonError(500, 'BUDGET_DELETE_FAILED', error.message);
   }
 
   return withSessionCookies(NextResponse.json({ success: true }), session);

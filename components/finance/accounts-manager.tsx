@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { DeleteConfirmDialog } from '@/components/finance/delete-confirm-dialog';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
@@ -28,6 +29,8 @@ export function AccountsManager() {
   const [initialBalance, setInitialBalance] = useState('0');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -81,18 +84,26 @@ export function AccountsManager() {
     await load();
   }
 
-  async function onDelete(id: string) {
-    const response = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
-    if (!response.ok) {
-      const payload = await response.json();
-      const message = payload.message ?? t('accounts.deleteFailed');
-      setError(message);
-      addToast({ title: t('accounts.deleteErrorTitle'), description: message, variant: 'error' });
-      return;
-    }
+  async function onDeleteConfirm() {
+    if (!deleteTarget || isDeleting) return;
 
-    addToast({ title: t('accounts.deleteSuccessTitle'), description: t('accounts.deleteSuccessText') });
-    await load();
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/accounts/${deleteTarget.id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        const payload = await response.json();
+        const message = payload.message ?? t('accounts.deleteFailed');
+        setError(message);
+        addToast({ title: t('accounts.deleteErrorTitle'), description: message, variant: 'error' });
+        return;
+      }
+
+      setDeleteTarget(null);
+      addToast({ title: t('accounts.deleteSuccessTitle'), description: t('accounts.deleteSuccessText') });
+      await load();
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   return (
@@ -179,13 +190,32 @@ export function AccountsManager() {
             <button
               type='button'
               className={`${financeUi.dangerButton} w-full sm:w-auto`}
-              onClick={() => onDelete(account.id)}
+              onClick={() => setDeleteTarget(account)}
+              disabled={isDeleting}
             >
               {t('common.delete')}
             </button>
           </article>
         ))}
       </div>
+
+      <DeleteConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        title={t('accounts.deleteConfirmTitle')}
+        description={t('accounts.deleteConfirmDescription')}
+        impact={t('accounts.deleteConfirmImpact')}
+        resourceLabel={t('accounts.deleteConfirmResourceLabel')}
+        resourceName={deleteTarget?.name ?? ''}
+        confirmLabel={isDeleting ? t('accounts.deleteInProgress') : t('accounts.deleteConfirmAction')}
+        cancelLabel={t('common.cancel')}
+        closeLabel={t('common.close')}
+        isSubmitting={isDeleting}
+        onCancel={() => {
+          if (isDeleting) return;
+          setDeleteTarget(null);
+        }}
+        onConfirm={onDeleteConfirm}
+      />
     </div>
   );
 }

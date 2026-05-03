@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { validateRecurringExpenseDelete } from '@/lib/finance/delete-validation';
 import { applyRecurringForUser, todayDateOnly } from '@/lib/finance/recurring';
 import { parseRecurringExpenseUpdatePayload } from '@/lib/finance/validation';
 import { getErrorMessage, jsonError, readJsonBody } from '@/lib/insforge/api';
@@ -172,6 +173,11 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const { client, session } = auth.ctx;
   const { id } = await params;
 
+  const validation = await validateRecurringExpenseDelete(client, session.user.id, id);
+  if (!validation.ok) {
+    return jsonError(validation.status, validation.code, validation.message, validation.nextActions);
+  }
+
   const { error } = await client.database
     .from('recurring_expenses')
     .delete()
@@ -179,7 +185,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     .eq('user_id', session.user.id);
 
   if (error) {
-    return jsonError(404, 'RECURRING_DELETE_FAILED', error.message);
+    return jsonError(500, 'RECURRING_DELETE_FAILED', error.message);
   }
 
   return withSessionCookies(NextResponse.json({ success: true }), session);

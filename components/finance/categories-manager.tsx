@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { ActionButton } from '@/components/finance/action-button';
+import { DeleteConfirmDialog } from '@/components/finance/delete-confirm-dialog';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
@@ -31,6 +32,8 @@ export function CategoriesManager() {
   const [editingColor, setEditingColor] = useState('#64748B');
   const [isUpdating, setIsUpdating] = useState(false);
   const [isModalHostReady, setIsModalHostReady] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -79,18 +82,26 @@ export function CategoriesManager() {
     await load();
   }
 
-  async function onDelete(id: string) {
-    const response = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
-    if (!response.ok) {
-      const payload = await response.json();
-      const message = payload.message ?? t('categories.deleteFailed');
-      setError(message);
-      addToast({ title: t('categories.deleteErrorTitle'), description: message, variant: 'error' });
-      return;
-    }
+  async function onDeleteConfirm() {
+    if (!deleteTarget || isDeleting) return;
 
-    addToast({ title: t('categories.deleteSuccessTitle'), description: t('categories.deleteSuccessText') });
-    await load();
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/categories/${deleteTarget.id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        const payload = await response.json();
+        const message = payload.message ?? t('categories.deleteFailed');
+        setError(message);
+        addToast({ title: t('categories.deleteErrorTitle'), description: message, variant: 'error' });
+        return;
+      }
+
+      setDeleteTarget(null);
+      addToast({ title: t('categories.deleteSuccessTitle'), description: t('categories.deleteSuccessText') });
+      await load();
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   function startEdit(category: Category) {
@@ -206,7 +217,13 @@ export function CategoriesManager() {
                 <ActionButton type='button' variant='secondary' fullWidthOnMobile onClick={() => startEdit(category)}>
                   {t('common.edit')}
                 </ActionButton>
-                <ActionButton type='button' variant='danger' fullWidthOnMobile onClick={() => onDelete(category.id)}>
+                <ActionButton
+                  type='button'
+                  variant='danger'
+                  fullWidthOnMobile
+                  onClick={() => setDeleteTarget(category)}
+                  disabled={isDeleting}
+                >
                   {t('common.delete')}
                 </ActionButton>
               </div>
@@ -228,8 +245,12 @@ export function CategoriesManager() {
               <section className={`${financeUi.modalCard} relative z-10 w-full max-w-lg`}>
                 <div className='mb-4 flex items-start justify-between gap-3'>
                   <div>
-                    <h3 className='text-lg font-semibold text-slate-900 dark:text-slate-100'>{t('categories.editModalTitle')}</h3>
-                    <p className='mt-1 text-sm text-slate-600 dark:text-slate-400'>{t('categories.editModalSubtitle')}</p>
+                    <h3 className='text-lg font-semibold text-slate-900 dark:text-slate-100'>
+                      {t('categories.editModalTitle')}
+                    </h3>
+                    <p className='mt-1 text-sm text-slate-600 dark:text-slate-400'>
+                      {t('categories.editModalSubtitle')}
+                    </p>
                   </div>
                   <ActionButton type='button' variant='secondary' onClick={cancelEdit}>
                     {t('common.close')}
@@ -280,6 +301,24 @@ export function CategoriesManager() {
             document.body,
           )
         : null}
+
+      <DeleteConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        title={t('categories.deleteConfirmTitle')}
+        description={t('categories.deleteConfirmDescription')}
+        impact={t('categories.deleteConfirmImpact')}
+        resourceLabel={t('categories.deleteConfirmResourceLabel')}
+        resourceName={deleteTarget?.name ?? ''}
+        confirmLabel={isDeleting ? t('categories.deleteInProgress') : t('categories.deleteConfirmAction')}
+        cancelLabel={t('common.cancel')}
+        closeLabel={t('common.close')}
+        isSubmitting={isDeleting}
+        onCancel={() => {
+          if (isDeleting) return;
+          setDeleteTarget(null);
+        }}
+        onConfirm={onDeleteConfirm}
+      />
     </div>
   );
 }

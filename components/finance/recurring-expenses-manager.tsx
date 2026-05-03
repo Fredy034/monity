@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { DeleteConfirmDialog } from '@/components/finance/delete-confirm-dialog';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
@@ -60,6 +61,8 @@ export function RecurringExpensesManager() {
   const [editCategoryId, setEditCategoryId] = useState('');
   const [editStartDate, setEditStartDate] = useState(todayDateOnly());
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<RecurringExpense | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const expenseCategories = useMemo(() => categories.filter((item) => item.type === 'expense'), [categories]);
 
@@ -222,6 +225,31 @@ export function RecurringExpensesManager() {
     }
   }
 
+  async function onDeleteConfirm() {
+    if (!deleteTarget || isDeleting) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/recurring-expenses/${deleteTarget.id}`, {
+        method: 'DELETE',
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        const message = payload.message ?? t('recurring.deleteFailed');
+        setError(message);
+        addToast({ title: t('recurring.deleteErrorTitle'), description: message, variant: 'error' });
+        return;
+      }
+
+      setDeleteTarget(null);
+      addToast({ title: t('recurring.deleteSuccessTitle'), description: t('recurring.deleteSuccessText') });
+      await load();
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <div className='space-y-6'>
       <form className={`${financeUi.formCard} grid gap-3 sm:grid-cols-2 xl:grid-cols-6`} onSubmit={onCreate}>
@@ -348,6 +376,14 @@ export function RecurringExpensesManager() {
                 >
                   {item.is_active ? t('recurring.pause') : t('recurring.resume')}
                 </button>
+                <button
+                  type='button'
+                  className={financeUi.dangerButton}
+                  onClick={() => setDeleteTarget(item)}
+                  disabled={isDeleting}
+                >
+                  {t('common.delete')}
+                </button>
               </div>
 
               {editingId === item.id ? (
@@ -452,6 +488,24 @@ export function RecurringExpensesManager() {
           );
         })}
       </div>
+
+      <DeleteConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        title={t('recurring.deleteConfirmTitle')}
+        description={t('recurring.deleteConfirmDescription')}
+        impact={t('recurring.deleteConfirmImpact')}
+        resourceLabel={t('recurring.deleteConfirmResourceLabel')}
+        resourceName={deleteTarget?.name ?? ''}
+        confirmLabel={isDeleting ? t('recurring.deleteInProgress') : t('recurring.deleteConfirmAction')}
+        cancelLabel={t('common.cancel')}
+        closeLabel={t('common.close')}
+        isSubmitting={isDeleting}
+        onCancel={() => {
+          if (isDeleting) return;
+          setDeleteTarget(null);
+        }}
+        onConfirm={onDeleteConfirm}
+      />
     </div>
   );
 }
