@@ -17,6 +17,20 @@ export function parseCurrency(input: unknown): string | null {
   return value;
 }
 
+export function parseTimeZone(input: unknown): string | null {
+  if (typeof input !== 'string') return null;
+
+  const value = input.trim();
+  if (!value) return null;
+
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value }).format(new Date());
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 export function parseAmount(input: unknown): number | null {
   const value = typeof input === 'number' ? input : typeof input === 'string' ? Number(input) : NaN;
   if (!Number.isFinite(value)) return null;
@@ -151,18 +165,22 @@ export function parseRecurringExpensePayload(input: unknown) {
   const accountId = typeof input.accountId === 'string' ? input.accountId.trim() : '';
   const categoryId = typeof input.categoryId === 'string' ? input.categoryId.trim() : '';
   const amount = parseAmount(input.amount);
+  const currency = parseCurrency(input.currency ?? 'USD');
   const frequency = typeof input.frequency === 'string' ? input.frequency.trim() : 'monthly';
   const startDate = parseIsoDate(input.startDate);
   const isActive = typeof input.isActive === 'boolean' ? input.isActive : true;
+  const timezone = parseTimeZone(input.timeZone ?? 'UTC');
 
   if (!name) return { ok: false as const, message: 'Recurring expense name is required.' };
   if (!accountId) return { ok: false as const, message: 'Associated account is required.' };
   if (!categoryId) return { ok: false as const, message: 'Associated category is required.' };
   if (amount === null || amount <= 0) return { ok: false as const, message: 'Amount must be greater than 0.' };
+  if (!currency) return { ok: false as const, message: 'Invalid recurring currency.' };
   if (!RECURRING_FREQUENCIES.includes(frequency as RecurringFrequency)) {
     return { ok: false as const, message: 'Invalid recurring frequency.' };
   }
   if (!startDate) return { ok: false as const, message: 'Invalid start date.' };
+  if (!timezone) return { ok: false as const, message: 'Invalid recurring timezone.' };
 
   return {
     ok: true as const,
@@ -171,9 +189,11 @@ export function parseRecurringExpensePayload(input: unknown) {
       account_id: accountId,
       category_id: categoryId,
       amount,
+      currency,
       frequency: frequency as RecurringFrequency,
       start_date: startDate,
       is_active: isActive,
+      timezone,
     },
   };
 }
@@ -185,9 +205,11 @@ export function parseRecurringExpenseUpdatePayload(input: unknown) {
     name?: string;
     account_id?: string;
     category_id?: string;
+    currency?: string;
     frequency?: RecurringFrequency;
     start_date?: string;
     is_active?: boolean;
+    timezone?: string;
     amount?: number;
     amount_effective_from?: string;
   } = {};
@@ -210,6 +232,12 @@ export function parseRecurringExpenseUpdatePayload(input: unknown) {
     next.category_id = categoryId;
   }
 
+  if ('currency' in input) {
+    const currency = parseCurrency(input.currency);
+    if (!currency) return { ok: false as const, message: 'Invalid recurring currency.' };
+    next.currency = currency;
+  }
+
   if ('frequency' in input) {
     const frequency = typeof input.frequency === 'string' ? input.frequency.trim() : '';
     if (!RECURRING_FREQUENCIES.includes(frequency as RecurringFrequency)) {
@@ -229,6 +257,12 @@ export function parseRecurringExpenseUpdatePayload(input: unknown) {
       return { ok: false as const, message: 'Invalid active status.' };
     }
     next.is_active = input.isActive;
+  }
+
+  if ('timeZone' in input) {
+    const timezone = parseTimeZone(input.timeZone);
+    if (!timezone) return { ok: false as const, message: 'Invalid recurring timezone.' };
+    next.timezone = timezone;
   }
 
   if ('amount' in input) {

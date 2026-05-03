@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { todayDateOnly } from '@/lib/finance/recurring';
+import { applyRecurringForAllUsers, currentExecutionTime } from '@/lib/finance/recurring';
 import { jsonError } from '@/lib/insforge/api';
 import { createServerInsForgeClient } from '@/lib/insforge/client';
 
@@ -25,11 +25,9 @@ export async function POST(request: Request) {
   }
 
   const client = createServerInsForgeClient();
-  const runDate = todayDateOnly();
+  const executionTime = currentExecutionTime();
 
-  const { data, error } = await client.database.rpc('apply_due_recurring_expenses_for_all', {
-    p_up_to_date: runDate,
-  });
+  const { data, error } = await applyRecurringForAllUsers(client, executionTime);
 
   if (error) {
     return jsonError(500, 'RECURRING_JOB_FAILED', error.message);
@@ -39,7 +37,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     data: {
-      run_date: runDate,
+      execution_time: executionTime,
       processed_users: processedUsers,
     },
   });

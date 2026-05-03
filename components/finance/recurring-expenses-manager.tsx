@@ -7,7 +7,49 @@ import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
 import { formatMoney } from '@/lib/finance/formatting';
+import { formatDateOnlyInTimeZone } from '@/lib/finance/recurring';
 import { useI18n } from '@/lib/i18n/client';
+
+const DEFAULT_RECURRING_CURRENCIES = ['COP', 'EUR', 'USD'];
+
+const COMMON_TIMEZONES = [
+  'Africa/Cairo',
+  'Africa/Johannesburg',
+  'Africa/Lagos',
+  'America/Argentina/Buenos_Aires',
+  'America/Bogota',
+  'America/Chicago',
+  'America/Denver',
+  'America/Lima',
+  'America/Los_Angeles',
+  'America/Mexico_City',
+  'America/New_York',
+  'America/Santiago',
+  'America/Sao_Paulo',
+  'America/Toronto',
+  'Asia/Bangkok',
+  'Asia/Colombo',
+  'Asia/Dubai',
+  'Asia/Jakarta',
+  'Asia/Karachi',
+  'Asia/Kolkata',
+  'Asia/Seoul',
+  'Asia/Shanghai',
+  'Asia/Singapore',
+  'Asia/Tokyo',
+  'Australia/Melbourne',
+  'Australia/Sydney',
+  'Europe/Amsterdam',
+  'Europe/Berlin',
+  'Europe/Istanbul',
+  'Europe/London',
+  'Europe/Madrid',
+  'Europe/Moscow',
+  'Europe/Paris',
+  'Pacific/Auckland',
+  'Pacific/Honolulu',
+  'UTC',
+];
 
 type Account = { id: string; name: string; currency: string; is_active: boolean };
 type Category = { id: string; name: string; type: 'income' | 'expense' };
@@ -23,17 +65,23 @@ type RecurringExpense = {
   name: string;
   account_id: string;
   category_id: string;
+  currency: string;
   frequency: 'monthly';
   start_date: string;
   is_active: boolean;
+  timezone: string;
   current_amount: number | null;
   next_charge_date: string | null;
   last_generated_date: string | null;
   amount_history: AmountHistory[];
 };
 
+function getBrowserTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+}
+
 function todayDateOnly() {
-  return new Date().toISOString().slice(0, 10);
+  return formatDateOnlyInTimeZone(new Date(), getBrowserTimeZone());
 }
 
 export function RecurringExpensesManager() {
@@ -49,6 +97,8 @@ export function RecurringExpensesManager() {
 
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('0');
+  const [currency, setCurrency] = useState('');
+  const [timezone, setTimezone] = useState(() => getBrowserTimeZone());
   const [accountId, setAccountId] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [startDate, setStartDate] = useState(todayDateOnly());
@@ -56,6 +106,8 @@ export function RecurringExpensesManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editAmount, setEditAmount] = useState('0');
+  const [editCurrency, setEditCurrency] = useState('USD');
+  const [editTimezone, setEditTimezone] = useState(() => getBrowserTimeZone());
   const [editAmountEffectiveFrom, setEditAmountEffectiveFrom] = useState(todayDateOnly());
   const [editAccountId, setEditAccountId] = useState('');
   const [editCategoryId, setEditCategoryId] = useState('');
@@ -65,6 +117,10 @@ export function RecurringExpensesManager() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const expenseCategories = useMemo(() => categories.filter((item) => item.type === 'expense'), [categories]);
+  const currencyOptions = useMemo(
+    () => [...new Set([...DEFAULT_RECURRING_CURRENCIES, ...accounts.map((account) => account.currency)])].sort(),
+    [accounts],
+  );
 
   const load = useCallback(async () => {
     setError(null);
@@ -108,6 +164,8 @@ export function RecurringExpensesManager() {
 
     const selectedAccount = accountId || accounts[0]?.id;
     const selectedCategory = categoryId || expenseCategories[0]?.id;
+    const selectedAccountCurrency = accounts.find((account) => account.id === selectedAccount)?.currency ?? 'USD';
+    const recurringCurrency = currency || selectedAccountCurrency;
 
     if (!selectedAccount) {
       const message = t('recurring.accountRequired');
@@ -129,11 +187,13 @@ export function RecurringExpensesManager() {
       body: JSON.stringify({
         name,
         amount: Number(amount),
+        currency: recurringCurrency,
         accountId: selectedAccount,
         categoryId: selectedCategory,
         frequency: 'monthly',
         startDate,
         isActive: true,
+        timeZone: timezone,
       }),
     });
 
@@ -147,6 +207,8 @@ export function RecurringExpensesManager() {
 
     setName('');
     setAmount('0');
+    setCurrency('');
+    setTimezone(getBrowserTimeZone());
     setStartDate(todayDateOnly());
     addToast({ title: t('recurring.createSuccessTitle'), description: t('recurring.createSuccessText') });
     await load();
@@ -156,6 +218,8 @@ export function RecurringExpensesManager() {
     setEditingId(item.id);
     setEditName(item.name);
     setEditAmount(item.current_amount?.toFixed(2) ?? '0');
+    setEditCurrency(item.currency);
+    setEditTimezone(item.timezone || getBrowserTimeZone());
     setEditAmountEffectiveFrom(todayDateOnly());
     setEditAccountId(item.account_id);
     setEditCategoryId(item.category_id);
@@ -166,7 +230,7 @@ export function RecurringExpensesManager() {
     const response = await fetch(`/api/recurring-expenses/${item.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isActive: !item.is_active }),
+      body: JSON.stringify({ isActive: !item.is_active, timeZone: getBrowserTimeZone() }),
     });
 
     const payload = await response.json();
@@ -190,9 +254,11 @@ export function RecurringExpensesManager() {
     try {
       const body: Record<string, unknown> = {
         name: editName,
+        currency: editCurrency,
         accountId: editAccountId,
         categoryId: editCategoryId,
         startDate: editStartDate,
+        timeZone: editTimezone,
       };
 
       const normalizedCurrentAmount = Number((item.current_amount ?? 0).toFixed(2));
@@ -252,7 +318,7 @@ export function RecurringExpensesManager() {
 
   return (
     <div className='space-y-6'>
-      <form className={`${financeUi.formCard} grid gap-3 sm:grid-cols-2 xl:grid-cols-6`} onSubmit={onCreate}>
+      <form className={`${financeUi.formCard} grid gap-3 sm:grid-cols-2 xl:grid-cols-3`} onSubmit={onCreate}>
         <div>
           <label className={financeUi.label}>{t('recurring.name')}</label>
           <input
@@ -276,6 +342,21 @@ export function RecurringExpensesManager() {
             }}
             required
           />
+        </div>
+        <div>
+          <label className={financeUi.label}>{t('recurring.currency')}</label>
+          <StyledSelect
+            value={
+              currency || accounts.find((account) => account.id === (accountId || accounts[0]?.id))?.currency || 'USD'
+            }
+            onChange={(event) => setCurrency(event.target.value)}
+          >
+            {currencyOptions.map((currencyOption) => (
+              <option key={currencyOption} value={currencyOption}>
+                {currencyOption}
+              </option>
+            ))}
+          </StyledSelect>
         </div>
         <div>
           <label className={financeUi.label}>{t('recurring.account')}</label>
@@ -313,8 +394,18 @@ export function RecurringExpensesManager() {
             required
           />
         </div>
-        <div className='flex items-end'>
-          <button type='submit' className={`${financeUi.primaryButton} w-full`}>
+        <div>
+          <label className={financeUi.label}>{t('recurring.timeZone')}</label>
+          <StyledSelect value={timezone} onChange={(event) => setTimezone(event.target.value)}>
+            {[...new Set([timezone, ...COMMON_TIMEZONES])].map((tz) => (
+              <option key={tz} value={tz}>
+                {tz}
+              </option>
+            ))}
+          </StyledSelect>
+        </div>
+        <div className='flex items-end sm:col-span-2 xl:col-span-3'>
+          <button type='submit' className={`${financeUi.primaryButton} w-full sm:w-auto`}>
             {t('recurring.add')}
           </button>
         </div>
@@ -334,7 +425,9 @@ export function RecurringExpensesManager() {
         {items.map((item) => {
           const account = accounts.find((row) => row.id === item.account_id);
           const category = expenseCategories.find((row) => row.id === item.category_id);
-          const amountCurrency = account?.currency;
+          const sourceCurrency = item.currency;
+          const accountCurrency = account?.currency ?? item.currency;
+          const isConverted = sourceCurrency !== accountCurrency;
 
           return (
             <article key={item.id} className={`${financeUi.listCard} space-y-4`}>
@@ -343,11 +436,21 @@ export function RecurringExpensesManager() {
                   <p className='truncate font-semibold text-slate-900 dark:text-slate-100'>{item.name}</p>
                   <p className='text-sm text-slate-600 dark:text-slate-400'>
                     {t('recurring.amount')}:{' '}
-                    {formatMoney(item.current_amount ?? 0, { locale, currency: amountCurrency })}
+                    {formatMoney(item.current_amount ?? 0, { locale, currency: sourceCurrency })}
                   </p>
                   <p className='text-sm text-slate-600 dark:text-slate-400'>
                     {t('recurring.account')}: {account?.name ?? t('recurring.unknownAccount')} |{' '}
                     {t('recurring.category')}: {category?.name ?? t('recurring.unknownCategory')}
+                  </p>
+                  <p className='text-sm text-slate-600 dark:text-slate-400'>
+                    {t('recurring.sourceCurrency')}: {sourceCurrency} | {t('recurring.executionCurrency')}:{' '}
+                    {accountCurrency}
+                  </p>
+                  <p className='text-xs text-slate-500 dark:text-slate-400'>
+                    {isConverted ? t('recurring.convertAtExecution') : t('recurring.sameCurrencyExecution')}
+                  </p>
+                  <p className='text-xs text-slate-500 dark:text-slate-400'>
+                    {t('recurring.timeZone')}: {item.timezone}
                   </p>
                 </div>
                 <div className='text-right text-sm text-slate-600 dark:text-slate-400 w-full sm:w-auto'>
@@ -407,6 +510,16 @@ export function RecurringExpensesManager() {
                     />
                   </div>
                   <div>
+                    <label className={financeUi.label}>{t('recurring.currency')}</label>
+                    <StyledSelect value={editCurrency} onChange={(event) => setEditCurrency(event.target.value)}>
+                      {currencyOptions.map((currencyOption) => (
+                        <option key={currencyOption} value={currencyOption}>
+                          {currencyOption}
+                        </option>
+                      ))}
+                    </StyledSelect>
+                  </div>
+                  <div>
                     <label className={financeUi.label}>{t('recurring.amountEffectiveFrom')}</label>
                     <input
                       type='date'
@@ -444,6 +557,16 @@ export function RecurringExpensesManager() {
                       onChange={(event) => setEditStartDate(event.target.value)}
                     />
                   </div>
+                  <div>
+                    <label className={financeUi.label}>{t('recurring.timeZone')}</label>
+                    <StyledSelect value={editTimezone} onChange={(event) => setEditTimezone(event.target.value)}>
+                      {[...new Set([editTimezone, ...COMMON_TIMEZONES])].map((tz) => (
+                        <option key={tz} value={tz}>
+                          {tz}
+                        </option>
+                      ))}
+                    </StyledSelect>
+                  </div>
                   <div className='sm:col-span-2 xl:col-span-3 flex flex-wrap gap-2'>
                     <button
                       type='button'
@@ -474,7 +597,7 @@ export function RecurringExpensesManager() {
                         className='flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-linear-to-r from-white to-slate-50/80 px-3 py-2 text-sm dark:border-slate-700 dark:from-slate-800/70 dark:to-slate-800/45'
                       >
                         <span className='text-slate-900 dark:text-slate-100'>
-                          {formatMoney(history.amount, { locale, currency: amountCurrency })}
+                          {formatMoney(history.amount, { locale, currency: sourceCurrency })}
                         </span>
                         <span className='text-xs text-slate-500 dark:text-slate-400'>
                           {t('recurring.effectiveFrom')}: {history.effective_from}

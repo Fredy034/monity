@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import { applyRecurringForUser, nextMonthlyChargeDate, todayDateOnly } from '@/lib/finance/recurring';
+import {
+  applyRecurringForUser,
+  ensureExchangeRatesAvailable,
+  nextMonthlyChargeDate,
+  todayDateOnly,
+} from '@/lib/finance/recurring';
 import { parseRecurringExpensePayload } from '@/lib/finance/validation';
 import { getErrorMessage, jsonError, readJsonBody } from '@/lib/insforge/api';
 import { getApiSessionContext, withSessionCookies } from '@/lib/insforge/route-session';
@@ -27,7 +32,7 @@ async function verifyReferences(
   categoryId: string,
 ) {
   const [accountRes, categoryRes] = await Promise.all([
-    client.database.from('accounts').select('id').eq('id', accountId).eq('user_id', userId).maybeSingle(),
+    client.database.from('accounts').select('id, currency').eq('id', accountId).eq('user_id', userId).maybeSingle(),
     client.database
       .from('categories')
       .select('id, type, user_id')
@@ -38,6 +43,7 @@ async function verifyReferences(
 
   return {
     accountExists: Boolean(accountRes.data),
+    accountCurrency: accountRes.data?.currency ?? null,
     categoryExists: Boolean(categoryRes.data),
     isExpenseCategory: categoryRes.data?.type === 'expense',
     error: accountRes.error ?? categoryRes.error,
@@ -58,7 +64,9 @@ export async function GET() {
   const [recurringRes, amountHistoryRes, occurrencesRes] = await Promise.all([
     client.database
       .from('recurring_expenses')
-      .select('id, name, account_id, category_id, frequency, start_date, is_active, created_at, updated_at')
+      .select(
+        'id, name, account_id, category_id, currency, frequency, start_date, is_active, timezone, created_at, updated_at',
+      )
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false }),
     client.database
@@ -79,7 +87,6 @@ export async function GET() {
     return jsonError(500, 'RECURRING_READ_FAILED', firstError.message);
   }
 
-  const today = todayDateOnly();
   const amountHistory = (amountHistoryRes.data ?? []) as AmountHistoryRow[];
   const occurrences = (occurrencesRes.data ?? []) as OccurrenceRow[];
 
@@ -98,11 +105,12 @@ export async function GET() {
   }
 
   const data = (recurringRes.data ?? []).map((item) => {
+    const businessToday = todayDateOnly(item.timezone);
     const history = historyByRecurring.get(item.id) ?? [];
-    const currentAmountRow = history.find((entry) => entry.effective_from <= today) ?? history.at(0) ?? null;
+    const currentAmountRow = history.find((entry) => entry.effective_from <= businessToday) ?? history.at(0) ?? null;
 
     const lastOccurrence = lastOccurrenceByRecurring.get(item.id) ?? null;
-    const referenceDate = lastOccurrence?.scheduled_date ?? today;
+    const referenceDate = lastOccurrence?.scheduled_date ?? businessToday;
 
     return {
       ...item,
@@ -149,12 +157,24 @@ export async function POST(request: Request) {
     return jsonError(400, 'INVALID_CATEGORY', 'The selected category must be an expense category available to you.');
   }
 
+  if (refs.accountCurrency && refs.accountCurrency !== parsed.value.currency) {
+    const exchangeSync = await ensureExchangeRatesAvailable(client, [
+      { baseCurrency: parsed.value.currency, quoteCurrency: refs.accountCurrency },
+    ]);
+
+    if (exchangeSync.error) {
+      return jsonError(503, 'EXCHANGE_RATE_UNAVAILABLE', exchangeSync.error.message);
+    }
+  }
+
   const { amount, ...basePayload } = parsed.value;
 
   const { data: recurring, error: recurringError } = await client.database
     .from('recurring_expenses')
     .insert([{ user_id: session.user.id, ...basePayload }])
-    .select('id, name, account_id, category_id, frequency, start_date, is_active, created_at, updated_at')
+    .select(
+      'id, name, account_id, category_id, currency, frequency, start_date, is_active, timezone, created_at, updated_at',
+    )
     .single();
 
   if (recurringError || !recurring) {

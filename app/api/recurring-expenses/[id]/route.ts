@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { validateRecurringExpenseDelete } from '@/lib/finance/delete-validation';
-import { applyRecurringForUser, todayDateOnly } from '@/lib/finance/recurring';
+import { applyRecurringForUser, ensureExchangeRatesAvailable, todayDateOnly } from '@/lib/finance/recurring';
 import { parseRecurringExpenseUpdatePayload } from '@/lib/finance/validation';
 import { getErrorMessage, jsonError, readJsonBody } from '@/lib/insforge/api';
 import { getApiSessionContext, withSessionCookies } from '@/lib/insforge/route-session';
@@ -12,16 +12,20 @@ async function verifyReferences(
   accountId?: string,
   categoryId?: string,
 ) {
+  let accountCurrency: string | null = null;
+
   if (accountId) {
     const { data, error } = await client.database
       .from('accounts')
-      .select('id')
+      .select('id, currency')
       .eq('id', accountId)
       .eq('user_id', userId)
       .maybeSingle();
 
     if (error) return { ok: false as const, message: error.message };
     if (!data) return { ok: false as const, message: 'Invalid account reference.' };
+
+    accountCurrency = data.currency;
   }
 
   if (categoryId) {
@@ -37,7 +41,7 @@ async function verifyReferences(
     if (!data) return { ok: false as const, message: 'Invalid category reference.' };
   }
 
-  return { ok: true as const };
+  return { ok: true as const, accountCurrency };
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -59,7 +63,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { data: existing, error: existingError } = await client.database
     .from('recurring_expenses')
-    .select('id, start_date')
+    .select('id, start_date, timezone, currency, account_id')
     .eq('id', id)
     .eq('user_id', session.user.id)
     .maybeSingle();
@@ -72,13 +76,48 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return jsonError(404, 'RECURRING_NOT_FOUND', 'Recurring expense not found.');
   }
 
-  if (parsed.value.start_date && parsed.value.start_date < todayDateOnly()) {
+  const effectiveTimeZone = parsed.value.timezone ?? existing.timezone;
+
+  if (parsed.value.start_date && parsed.value.start_date < todayDateOnly(effectiveTimeZone)) {
     return jsonError(400, 'INVALID_START_DATE', 'Start date cannot be moved to the past.');
   }
 
   const refs = await verifyReferences(client, session.user.id, parsed.value.account_id, parsed.value.category_id);
   if (!refs.ok) {
     return jsonError(400, 'INVALID_REFERENCE', refs.message);
+  }
+
+  const targetAccountId = parsed.value.account_id ?? existing.account_id;
+  const targetCurrency = parsed.value.currency ?? existing.currency;
+  let targetAccountCurrency = refs.accountCurrency;
+
+  if (!targetAccountCurrency) {
+    const { data: account, error: accountError } = await client.database
+      .from('accounts')
+      .select('currency')
+      .eq('id', targetAccountId)
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+
+    if (accountError) {
+      return jsonError(500, 'ACCOUNT_READ_FAILED', accountError.message);
+    }
+
+    if (!account) {
+      return jsonError(400, 'INVALID_ACCOUNT', 'The selected account does not belong to you.');
+    }
+
+    targetAccountCurrency = account.currency;
+  }
+
+  if (targetAccountCurrency && targetAccountCurrency !== targetCurrency) {
+    const exchangeSync = await ensureExchangeRatesAvailable(client, [
+      { baseCurrency: targetCurrency, quoteCurrency: targetAccountCurrency },
+    ]);
+
+    if (exchangeSync.error) {
+      return jsonError(503, 'EXCHANGE_RATE_UNAVAILABLE', exchangeSync.error.message);
+    }
   }
 
   const { amount, amount_effective_from, ...updatableFields } = parsed.value;
@@ -96,12 +135,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   if (amount !== undefined) {
-    const generation = await applyRecurringForUser(client, session.user.id, todayDateOnly());
+    const generation = await applyRecurringForUser(client, session.user.id);
     if (generation.error) {
       return jsonError(500, 'RECURRING_GENERATION_FAILED', generation.error.message);
     }
 
-    if (amount_effective_from && amount_effective_from < todayDateOnly()) {
+    if (amount_effective_from && amount_effective_from < todayDateOnly(effectiveTimeZone)) {
       return jsonError(400, 'INVALID_EFFECTIVE_DATE', 'Amount changes must be effective today or later.');
     }
 
@@ -111,7 +150,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           user_id: session.user.id,
           recurring_expense_id: id,
           amount,
-          effective_from: amount_effective_from ?? todayDateOnly(),
+          effective_from: amount_effective_from ?? todayDateOnly(effectiveTimeZone),
         },
       ],
       { onConflict: 'recurring_expense_id,effective_from' },
@@ -122,7 +161,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
   }
 
-  const generation = await applyRecurringForUser(client, session.user.id, todayDateOnly());
+  const generation = await applyRecurringForUser(client, session.user.id);
   if (generation.error) {
     return jsonError(500, 'RECURRING_GENERATION_FAILED', generation.error.message);
   }
@@ -130,7 +169,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const [recurringRes, amountHistoryRes] = await Promise.all([
     client.database
       .from('recurring_expenses')
-      .select('id, name, account_id, category_id, frequency, start_date, is_active, created_at, updated_at')
+      .select(
+        'id, name, account_id, category_id, currency, frequency, start_date, is_active, timezone, created_at, updated_at',
+      )
       .eq('id', id)
       .eq('user_id', session.user.id)
       .single(),
