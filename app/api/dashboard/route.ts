@@ -8,10 +8,8 @@ import { getApiSessionContext, withSessionCookies } from '@/lib/insforge/route-s
 const MIN_YEAR = 2000;
 const MAX_YEAR = 2100;
 
-function monthStart(date = new Date()) {
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth();
-  return new Date(Date.UTC(year, month, 1));
+function monthStart(year: number, month: number) {
+  return new Date(Date.UTC(year, month - 1, 1));
 }
 
 function monthEnd(start: Date) {
@@ -36,6 +34,12 @@ function parseYear(value: string | null, fallback: number) {
   return parsed;
 }
 
+function parseMonth(value: string | null, fallback: number) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 12) return fallback;
+  return parsed;
+}
+
 function monthLabel(monthIndex: number) {
   return String(monthIndex).padStart(2, '0');
 }
@@ -54,10 +58,11 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const now = new Date();
   const selectedYear = parseYear(url.searchParams.get('year'), now.getUTCFullYear());
+  const selectedMonth = parseMonth(url.searchParams.get('month'), now.getUTCMonth() + 1);
   const selectedAccountId = url.searchParams.get('accountId');
 
-  const currentMonthStart = monthStart();
-  const currentMonthEnd = monthEnd(currentMonthStart);
+  const selectedMonthStart = monthStart(selectedYear, selectedMonth);
+  const selectedMonthEnd = monthEnd(selectedMonthStart);
   const selectedYearStart = yearStart(selectedYear);
   const selectedYearEnd = yearEnd(selectedYear);
 
@@ -86,7 +91,7 @@ export async function GET(request: Request) {
       .from('budgets')
       .select('id, category_id, period_month, limit_amount')
       .eq('user_id', session.user.id)
-      .eq('period_month', dateOnly(currentMonthStart)),
+      .eq('period_month', dateOnly(selectedMonthStart)),
   ]);
 
   const firstError =
@@ -147,7 +152,7 @@ export async function GET(request: Request) {
       openingMovementBeforeSelectedYear += signed;
     }
 
-    if (txDate >= currentMonthStart && txDate <= currentMonthEnd) {
+    if (txDate >= selectedMonthStart && txDate <= selectedMonthEnd) {
       if (tx.type === 'income') {
         monthIncome += amount;
       } else {
@@ -279,6 +284,7 @@ export async function GET(request: Request) {
         budgets,
         charts: {
           selected_year: selectedYear,
+          selected_month: selectedMonth,
           selected_account_id: selectedAccountId,
           available_years: sortedYears,
           monthly_cash_flow: monthlyFlow,

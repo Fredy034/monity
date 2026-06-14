@@ -147,6 +147,7 @@ export const es = {
     noSpendingData: 'No hay datos de gasto para este mes.',
     noBudgets: 'No hay presupuestos definidos para este mes.',
     periodYear: 'Año del periodo',
+    periodMonth: 'Mes del periodo',
     accountScope: 'Alcance de cuenta',
     allAccounts: 'Todas las cuentas',
     incomeVsExpensesTitle: 'Ingresos vs gastos mensuales',

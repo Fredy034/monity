@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -17,6 +18,7 @@ import {
 } from 'recharts';
 
 import { financeUi } from '@/components/finance/ui';
+import { formatMonthLabel } from '@/lib/finance/dates';
 import { formatMoney } from '@/lib/finance/formatting';
 
 export type DashboardMonthlyFlowPoint = {
@@ -44,6 +46,7 @@ export type DashboardAccountExpensePoint = {
 
 export type DashboardChartsPayload = {
   selected_year: number;
+  selected_month: number;
   selected_account_id: string | null;
   available_years: number[];
   monthly_cash_flow: DashboardMonthlyFlowPoint[];
@@ -68,6 +71,41 @@ type DashboardChartCopy = {
   noAccountExpenseData: string;
 };
 
+function ChartSlot({ className, children }: { className: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const updateSize = () => {
+      const { width, height } = element.getBoundingClientRect();
+      setReady(width > 0 && height > 0);
+    };
+
+    updateSize();
+
+    const observer = new ResizeObserver(() => {
+      updateSize();
+    });
+
+    observer.observe(element);
+    window.addEventListener('resize', updateSize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
+  }, []);
+
+  return (
+    <div ref={ref} className={className}>
+      {ready ? children : null}
+    </div>
+  );
+}
+
 export function DashboardCharts({
   charts,
   locale,
@@ -79,11 +117,9 @@ export function DashboardCharts({
   currency: string;
   copy: DashboardChartCopy;
 }) {
-  const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'short' });
-
   const monthlyData = charts.monthly_cash_flow.map((item) => ({
     ...item,
-    month_label: monthFormatter.format(new Date(Date.UTC(charts.selected_year, Math.max(item.month_index - 1, 0), 1))),
+    month_label: formatMonthLabel(item.month_index, locale),
   }));
 
   const hasFlowData = monthlyData.some((item) => item.income > 0 || item.expense > 0);
@@ -92,14 +128,14 @@ export function DashboardCharts({
 
   return (
     <section className='grid gap-4 xl:grid-cols-2'>
-      <article className={financeUi.formCard}>
+      <article className={`${financeUi.formCard} min-w-0`}>
         <header className='mb-3'>
           <h2 className={financeUi.sectionTitle}>{copy.incomeVsExpensesTitle}</h2>
           <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{copy.incomeVsExpensesSubtitle}</p>
         </header>
 
         {hasFlowData ? (
-          <div className='h-72'>
+          <ChartSlot className='h-72 min-w-0'>
             <ResponsiveContainer width='100%' height='100%'>
               <BarChart data={monthlyData} barGap={6}>
                 <CartesianGrid strokeDasharray='3 3' stroke='#e2e8f0' vertical={false} />
@@ -114,20 +150,20 @@ export function DashboardCharts({
                 <Bar dataKey='expense' name={copy.expenses} radius={[8, 8, 0, 0]} fill='#e11d48' />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartSlot>
         ) : (
           <div className={financeUi.emptyState}>{copy.noFlowData}</div>
         )}
       </article>
 
-      <article className={financeUi.formCard}>
+      <article className={`${financeUi.formCard} min-w-0`}>
         <header className='mb-3'>
           <h2 className={financeUi.sectionTitle}>{copy.cumulativeBalanceTitle}</h2>
           <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{copy.cumulativeBalanceSubtitle}</p>
         </header>
 
         {hasFlowData ? (
-          <div className='h-72'>
+          <ChartSlot className='h-72 min-w-0'>
             <ResponsiveContainer width='100%' height='100%'>
               <AreaChart data={monthlyData}>
                 <defs>
@@ -153,22 +189,22 @@ export function DashboardCharts({
                 />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
+          </ChartSlot>
         ) : (
           <div className={financeUi.emptyState}>{copy.noFlowData}</div>
         )}
       </article>
 
-      <article className={financeUi.formCard}>
+      <article className={`${financeUi.formCard} min-w-0`}>
         <header className='mb-3'>
           <h2 className={financeUi.sectionTitle}>{copy.spendingDistributionTitle}</h2>
           <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{copy.spendingDistributionSubtitle}</p>
         </header>
 
         {hasCategoryData ? (
-          <div className='flex flex-col gap-4 md:h-72 md:flex-row md:items-center'>
+          <div className='flex min-w-0 flex-col gap-4 md:h-72 md:flex-row md:items-center md:gap-5'>
             {/* Chart Container - Fixed size, vertically centered on desktop */}
-            <div className='mx-auto h-56 w-full max-w-55 shrink-0'>
+            <ChartSlot className='mx-auto h-56 w-56 shrink-0 md:h-64 md:w-56'>
               <ResponsiveContainer width='100%' height='100%'>
                 <PieChart>
                   <Pie
@@ -177,8 +213,8 @@ export function DashboardCharts({
                     nameKey='category_name'
                     cx='50%'
                     cy='50%'
-                    innerRadius={62}
-                    outerRadius={90}
+                    innerRadius={58}
+                    outerRadius={84}
                     paddingAngle={2}
                   >
                     {charts.spending_by_category.map((entry) => (
@@ -188,23 +224,30 @@ export function DashboardCharts({
                   <Tooltip formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })} />
                 </PieChart>
               </ResponsiveContainer>
-            </div>
+            </ChartSlot>
 
-            {/* Scrollable Legend Container */}
-            <div className='w-full flex-1 space-y-2 pr-2 md:max-h-full md:overflow-y-auto custom-scrollbar'>
+            <div className='w-full flex-1 space-y-2 pr-2 md:max-h-full md:overflow-y-auto md:pl-1 custom-scrollbar'>
               {charts.spending_by_category.map((item) => (
                 <div
                   key={item.category_id}
-                  className='flex min-w-0 flex-wrap items-start justify-between gap-2 rounded-xl border border-slate-200 bg-linear-to-r from-white to-slate-50/80 px-3 py-2 text-sm dark:border-slate-700 dark:from-slate-800/70 dark:to-slate-800/45 sm:flex-nowrap sm:items-center'
+                  className='flex min-w-0 flex-col gap-2 rounded-xl border border-slate-200 bg-linear-to-r from-white to-slate-50/80 px-3 py-2 text-sm dark:border-slate-700 dark:from-slate-800/70 dark:to-slate-800/45 sm:flex-row sm:items-center sm:justify-between'
                 >
-                  <span className='inline-flex min-w-0 items-center gap-2 text-slate-800 dark:text-slate-100'>
-                    <span className='h-2.5 w-2.5 shrink-0 rounded-full' style={{ backgroundColor: item.color }} />
-                    <span className='truncate' title={item.category_name}>
-                      {item.category_name}
-                    </span>
-                  </span>
-                  <span className='shrink-0 text-right'>
-                    <span className='block text-xs text-slate-500 dark:text-slate-400'>{item.percent.toFixed(1)}%</span>
+                  <span className='shrink-0 flex flex-col items-center gap-2 text-slate-700 dark:text-slate-300'>
+                    <div className='flex w-full items-start justify-between gap-2'>
+                      <span className='flex min-w-0 flex-1 items-start gap-1'>
+                        <span className='mt-1 h-2 w-2 shrink-0 rounded-full' style={{ backgroundColor: item.color }} />
+                        <span
+                          className='min-w-0 wrap-break-words leading-snug text-xs text-left'
+                          title={item.category_name}
+                        >
+                          {item.category_name}
+                        </span>
+                      </span>
+
+                      <span className='shrink-0 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400'>
+                        {item.percent.toFixed(1)}%
+                      </span>
+                    </div>
                     <span className='font-semibold text-amber-600'>
                       {formatMoney(item.spent, { locale, currency })}
                     </span>
@@ -218,14 +261,14 @@ export function DashboardCharts({
         )}
       </article>
 
-      <article className={financeUi.formCard}>
+      <article className={`${financeUi.formCard} min-w-0`}>
         <header className='mb-3'>
           <h2 className={financeUi.sectionTitle}>{copy.expensesByAccountTitle}</h2>
           <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{copy.expensesByAccountSubtitle}</p>
         </header>
 
         {hasAccountExpenseData ? (
-          <div className='h-72'>
+          <ChartSlot className='h-72 min-w-0'>
             <ResponsiveContainer width='100%' height='100%'>
               <BarChart data={charts.expenses_by_account} layout='vertical' margin={{ left: 8, right: 8 }}>
                 <CartesianGrid strokeDasharray='3 3' stroke='#e2e8f0' horizontal={false} />
@@ -237,7 +280,7 @@ export function DashboardCharts({
                 <YAxis
                   dataKey='account_name'
                   type='category'
-                  width={92}
+                  width={120}
                   tick={{ fill: '#475569', fontSize: 12 }}
                   interval={0}
                 />
@@ -245,7 +288,7 @@ export function DashboardCharts({
                 <Bar dataKey='spent' name={copy.expenses} radius={[0, 8, 8, 0]} fill='#f97316' />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartSlot>
         ) : (
           <div className={financeUi.emptyState}>{copy.noAccountExpenseData}</div>
         )}

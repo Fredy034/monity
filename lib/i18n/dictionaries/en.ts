@@ -144,6 +144,7 @@ export const en = {
     noSpendingData: 'No spending data for this month.',
     noBudgets: 'No budgets set for this month.',
     periodYear: 'Period year',
+    periodMonth: 'Period month',
     accountScope: 'Account scope',
     allAccounts: 'All accounts',
     incomeVsExpensesTitle: 'Monthly income vs expenses',

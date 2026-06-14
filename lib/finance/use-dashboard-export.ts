@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { useCallback } from 'react';
 
+import { formatMonthLabel } from '@/lib/finance/dates';
 import { formatMoney } from '@/lib/finance/formatting';
 import { generateFilename } from '@/lib/finance/pdf-export';
 
@@ -30,6 +31,7 @@ export interface DashboardExportOptions {
     }>;
     charts: {
       selected_year: number;
+      selected_month: number;
       selected_account_id: string | null;
       available_years: number[];
       monthly_cash_flow: Array<{
@@ -130,13 +132,13 @@ export function useDashboardExport() {
     const contentWidth = pageWidth - margin * 2;
     const defaultCurrency = data.accounts[0]?.currency ?? 'USD';
     const accountMap = new Map(data.accounts.map((account) => [account.id, account]));
-    const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'short' });
     const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });
     const generatedOn = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date());
     const selectedAccountLabel =
       data.charts.selected_account_id && data.charts.selected_account_id !== 'all'
         ? (accountMap.get(data.charts.selected_account_id)?.name ?? t('dashboard.allAccounts'))
         : t('dashboard.allAccounts');
+    const selectedMonthLabel = formatMonthLabel(data.charts.selected_month, locale, 'long');
 
     let y = margin;
 
@@ -150,7 +152,7 @@ export function useDashboardExport() {
     pdf.setFontSize(10);
     setText(pdf, '#475569');
     pdf.text(
-      `${t('dashboard.periodYear')}: ${data.charts.selected_year} · ${t('dashboard.accountScope')}: ${selectedAccountLabel} · ${generatedOn}`,
+      `${t('dashboard.periodYear')}: ${data.charts.selected_year} · ${t('dashboard.periodMonth')}: ${selectedMonthLabel} · ${t('dashboard.accountScope')}: ${selectedAccountLabel} · ${generatedOn}`,
       margin,
       y,
     );
@@ -247,11 +249,7 @@ export function useDashboardExport() {
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(8.5);
         setText(pdf, '#0f172a');
-        pdf.text(
-          monthFormatter.format(new Date(Date.UTC(data.charts.selected_year, Math.max(row.month_index - 1, 0), 1))),
-          margin + 2,
-          y + 4.4,
-        );
+        pdf.text(formatMonthLabel(row.month_index, locale), margin + 2, y + 4.4);
         pdf.text(formatMoney(row.income, { locale, currency: defaultCurrency }), margin + contentWidth * 0.36, y + 4.4);
         pdf.text(
           formatMoney(row.expense, { locale, currency: defaultCurrency }),

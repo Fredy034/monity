@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 
 import { DashboardCharts, type DashboardChartsPayload } from '@/components/finance/dashboard-charts';
+import { DashboardMonthSelect } from '@/components/finance/dashboard-month-select';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
@@ -58,13 +59,16 @@ export function DashboardOverview() {
   const { addToast } = useToast();
   const { exportDashboardToPDF } = useDashboardExport();
   const currentYear = new Date().getUTCFullYear();
+  const currentMonth = new Date().getUTCMonth() + 1;
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [canRenderCharts, setCanRenderCharts] = useState(false);
 
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
   const [selectedAccountScope, setSelectedAccountScope] = useState<string>('all');
 
   const [txType, setTxType] = useState<'income' | 'expense'>('expense');
@@ -95,7 +99,7 @@ export function DashboardOverview() {
   }, [hasLoadedQuickAddPreference, isQuickAddOpen]);
 
   const fetchDashboard = useCallback(async () => {
-    const query = new URLSearchParams({ year: String(selectedYear) });
+    const query = new URLSearchParams({ year: String(selectedYear), month: String(selectedMonth) });
     if (selectedAccountScope !== 'all') {
       query.set('accountId', selectedAccountScope);
     }
@@ -117,11 +121,16 @@ export function DashboardOverview() {
       setSelectedYear(nextYear);
     }
 
+    const nextMonth = Number(payload.data?.charts?.selected_month ?? selectedMonth);
+    if (Number.isFinite(nextMonth) && nextMonth >= 1 && nextMonth <= 12 && nextMonth !== selectedMonth) {
+      setSelectedMonth(nextMonth);
+    }
+
     const nextAccount = (payload.data?.charts?.selected_account_id as string | null) ?? 'all';
     if (nextAccount !== selectedAccountScope) {
       setSelectedAccountScope(nextAccount);
     }
-  }, [addToast, selectedAccountScope, selectedYear, t]);
+  }, [addToast, selectedAccountScope, selectedMonth, selectedYear, t]);
 
   const fetchCategories = useCallback(async () => {
     const response = await fetch('/api/categories');
@@ -158,6 +167,14 @@ export function DashboardOverview() {
       setCategoryId(filteredCategories[0].id);
     }
   }, [categoryId, filteredCategories]);
+
+  useLayoutEffect(() => {
+    const id = requestAnimationFrame(() => {
+      setCanRenderCharts(true);
+    });
+
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   async function onAddTransaction(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -378,7 +395,7 @@ export function DashboardOverview() {
 
         <section className={financeUi.formCard}>
           <div className='flex flex-wrap items-end gap-3'>
-            <div className='min-w-45 flex-1'>
+            <div className='min-w-40 flex-1'>
               <label className={financeUi.label}>{t('dashboard.periodYear')}</label>
               <StyledSelect
                 value={String(selectedYear)}
@@ -390,6 +407,10 @@ export function DashboardOverview() {
                   </option>
                 ))}
               </StyledSelect>
+            </div>
+            <div className='min-w-40 flex-1'>
+              <label className={financeUi.label}>{t('dashboard.periodMonth')}</label>
+              <DashboardMonthSelect value={selectedMonth} locale={locale} onChange={setSelectedMonth} />
             </div>
             <div className='min-w-55 flex-[1.4]'>
               <label className={financeUi.label}>{t('dashboard.accountScope')}</label>
@@ -408,27 +429,36 @@ export function DashboardOverview() {
           </div>
         </section>
 
-        <DashboardCharts
-          charts={data.charts}
-          locale={locale}
-          currency={defaultCurrency}
-          copy={{
-            income: t('dashboard.income'),
-            expenses: t('dashboard.expense'),
-            cumulative: t('dashboard.cumulativeBalanceLegend'),
-            incomeVsExpensesTitle: t('dashboard.incomeVsExpensesTitle'),
-            incomeVsExpensesSubtitle: t('dashboard.incomeVsExpensesSubtitle'),
-            cumulativeBalanceTitle: t('dashboard.cumulativeBalanceTitle'),
-            cumulativeBalanceSubtitle: t('dashboard.cumulativeBalanceSubtitle'),
-            spendingDistributionTitle: t('dashboard.spendingDistributionTitle'),
-            spendingDistributionSubtitle: t('dashboard.spendingDistributionSubtitle'),
-            expensesByAccountTitle: t('dashboard.expensesByAccountTitle'),
-            expensesByAccountSubtitle: t('dashboard.expensesByAccountSubtitle'),
-            noFlowData: t('dashboard.noFlowData'),
-            noCategoryData: t('dashboard.noCategoryChartData'),
-            noAccountExpenseData: t('dashboard.noAccountExpenseChartData'),
-          }}
-        />
+        {canRenderCharts ? (
+          <DashboardCharts
+            charts={data.charts}
+            locale={locale}
+            currency={defaultCurrency}
+            copy={{
+              income: t('dashboard.income'),
+              expenses: t('dashboard.expense'),
+              cumulative: t('dashboard.cumulativeBalanceLegend'),
+              incomeVsExpensesTitle: t('dashboard.incomeVsExpensesTitle'),
+              incomeVsExpensesSubtitle: t('dashboard.incomeVsExpensesSubtitle'),
+              cumulativeBalanceTitle: t('dashboard.cumulativeBalanceTitle'),
+              cumulativeBalanceSubtitle: t('dashboard.cumulativeBalanceSubtitle'),
+              spendingDistributionTitle: t('dashboard.spendingDistributionTitle'),
+              spendingDistributionSubtitle: t('dashboard.spendingDistributionSubtitle'),
+              expensesByAccountTitle: t('dashboard.expensesByAccountTitle'),
+              expensesByAccountSubtitle: t('dashboard.expensesByAccountSubtitle'),
+              noFlowData: t('dashboard.noFlowData'),
+              noCategoryData: t('dashboard.noCategoryChartData'),
+              noAccountExpenseData: t('dashboard.noAccountExpenseChartData'),
+            }}
+          />
+        ) : (
+          <section className='grid gap-4 xl:grid-cols-2'>
+            <div className={`${financeUi.formCard} h-72`} />
+            <div className={`${financeUi.formCard} h-72`} />
+            <div className={`${financeUi.formCard} h-72`} />
+            <div className={`${financeUi.formCard} h-72`} />
+          </section>
+        )}
 
         <section className='grid gap-4 lg:grid-cols-2'>
           <article className='grid grid-cols-1 gap-4'>
