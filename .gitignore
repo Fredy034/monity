@@ -55,6 +55,7 @@ next-env.d.ts
 .trae
 .windsurf
 .superpowers/
+.worktrees/
 
 # IDE
 .vscode
