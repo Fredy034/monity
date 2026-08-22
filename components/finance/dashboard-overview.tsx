@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 
 import { DashboardCharts, type DashboardChartsPayload } from '@/components/finance/dashboard-charts';
-import { DashboardMonthSelect } from '@/components/finance/dashboard-month-select';
+import { PeriodNavigator } from '@/components/finance/period-navigator';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
 import { formatMoney } from '@/lib/finance/formatting';
+import type { FinancePeriod } from '@/lib/finance/period';
 import { useDashboardExport } from '@/lib/finance/use-dashboard-export';
 import { useI18n } from '@/lib/i18n/client';
 
@@ -67,8 +68,9 @@ export function DashboardOverview() {
   const [isExporting, setIsExporting] = useState(false);
   const [canRenderCharts, setCanRenderCharts] = useState(false);
 
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
+  const [selectedPeriod, setSelectedPeriod] = useState<FinancePeriod>({ year: currentYear, month: currentMonth });
+  const selectedYear = selectedPeriod.year;
+  const selectedMonth = selectedPeriod.month;
   const [selectedAccountScope, setSelectedAccountScope] = useState<string>('all');
 
   const [txType, setTxType] = useState<'income' | 'expense'>('expense');
@@ -118,12 +120,12 @@ export function DashboardOverview() {
 
     const nextYear = Number(payload.data?.charts?.selected_year ?? selectedYear);
     if (Number.isFinite(nextYear) && nextYear !== selectedYear) {
-      setSelectedYear(nextYear);
+      setSelectedPeriod((period) => ({ ...period, year: nextYear }));
     }
 
     const nextMonth = Number(payload.data?.charts?.selected_month ?? selectedMonth);
     if (Number.isFinite(nextMonth) && nextMonth >= 1 && nextMonth <= 12 && nextMonth !== selectedMonth) {
-      setSelectedMonth(nextMonth);
+      setSelectedPeriod((period) => ({ ...period, month: nextMonth }));
     }
 
     const nextAccount = (payload.data?.charts?.selected_account_id as string | null) ?? 'all';
@@ -394,24 +396,13 @@ export function DashboardOverview() {
         </section>
 
         <section className={financeUi.formCard}>
-          <div className='flex flex-wrap items-end gap-3'>
-            <div className='min-w-40 flex-1'>
-              <label className={financeUi.label}>{t('dashboard.periodYear')}</label>
-              <StyledSelect
-                value={String(selectedYear)}
-                onChange={(event) => setSelectedYear(Number(event.target.value))}
-              >
-                {(data.charts.available_years.length > 0 ? data.charts.available_years : [selectedYear]).map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </StyledSelect>
-            </div>
-            <div className='min-w-40 flex-1'>
-              <label className={financeUi.label}>{t('dashboard.periodMonth')}</label>
-              <DashboardMonthSelect value={selectedMonth} locale={locale} onChange={setSelectedMonth} />
-            </div>
+          <div className='flex flex-wrap items-end justify-between gap-3'>
+            <PeriodNavigator
+              value={selectedPeriod}
+              availableYears={data.charts.available_years}
+              locale={locale}
+              onChange={setSelectedPeriod}
+            />
             <div className='min-w-55 flex-[1.4]'>
               <label className={financeUi.label}>{t('dashboard.accountScope')}</label>
               <StyledSelect
