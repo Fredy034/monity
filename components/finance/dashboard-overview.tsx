@@ -8,6 +8,7 @@ import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
 import { formatMoney } from '@/lib/finance/formatting';
+import type { DashboardComparisons } from '@/lib/finance/dashboard-analytics';
 import type { FinancePeriod } from '@/lib/finance/period';
 import { useDashboardExport } from '@/lib/finance/use-dashboard-export';
 import { useI18n } from '@/lib/i18n/client';
@@ -44,6 +45,7 @@ type DashboardPayload = {
     utilization_percent: number;
     is_exceeded: boolean;
   }>;
+  comparisons: DashboardComparisons;
 };
 
 type Category = {

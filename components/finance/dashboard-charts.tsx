@@ -18,6 +18,7 @@ import {
 } from 'recharts';
 
 import { financeUi } from '@/components/finance/ui';
+import type { CategoryTrendPoint } from '@/lib/finance/dashboard-analytics';
 import { formatMonthLabel } from '@/lib/finance/dates';
 import { formatMoney } from '@/lib/finance/formatting';
 
@@ -52,6 +53,7 @@ export type DashboardChartsPayload = {
   monthly_cash_flow: DashboardMonthlyFlowPoint[];
   spending_by_category: DashboardCategorySpendPoint[];
   expenses_by_account: DashboardAccountExpensePoint[];
+  category_spending_trend: CategoryTrendPoint;
 };
 
 type DashboardChartCopy = {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { applyRecurringForUser } from '@/lib/finance/recurring';
+import { buildCategoryTrend, buildDashboardComparisons } from '@/lib/finance/dashboard-analytics';
 import { signedAmount, type TransactionType } from '@/lib/finance/validation';
 import { jsonError } from '@/lib/insforge/api';
 import { getApiSessionContext, withSessionCookies } from '@/lib/insforge/route-session';
@@ -101,9 +102,29 @@ export async function GET(request: Request) {
     return jsonError(500, 'DASHBOARD_READ_FAILED', firstError.message);
   }
 
+  if (selectedAccountId && !(accountsRes.data ?? []).some((account) => account.id === selectedAccountId)) {
+    return jsonError(400, 'INVALID_ACCOUNT_SCOPE', 'The selected account does not belong to you.');
+  }
+
   const categories = categoriesRes.data ?? [];
   const txs = transactionsRes.data ?? [];
   const filteredTransactions = selectedAccountId ? txs.filter((item) => item.account_id === selectedAccountId) : txs;
+  const analyticsTransactions = filteredTransactions.map((item) => ({
+    categoryId: item.category_id,
+    amount: Number(item.amount),
+    transactionDate: item.transaction_date,
+    type: item.type as 'income' | 'expense',
+  }));
+  const analyticsCategories = categories.map((item) => ({ id: item.id, name: item.name, color: item.color }));
+  const categorySpendingTrend = buildCategoryTrend({
+    period: { year: selectedYear, month: selectedMonth },
+    transactions: analyticsTransactions,
+    categories: analyticsCategories,
+  });
+  const comparisons = buildDashboardComparisons({
+    period: { year: selectedYear, month: selectedMonth },
+    transactions: analyticsTransactions,
+  });
   const recentTransactions = (recentRes.data ?? []).map((item) => ({
     ...item,
     amount: Number(item.amount),
@@ -282,6 +303,7 @@ export async function GET(request: Request) {
         recent_transactions: recentTransactions,
         spending_by_category: spendingByCategory,
         budgets,
+        comparisons,
         charts: {
           selected_year: selectedYear,
           selected_month: selectedMonth,
@@ -290,6 +312,7 @@ export async function GET(request: Request) {
           monthly_cash_flow: monthlyFlow,
           spending_by_category: chartSpendingByCategory,
           expenses_by_account: chartExpensesByAccount,
+          category_spending_trend: categorySpendingTrend,
         },
       },
     }),
