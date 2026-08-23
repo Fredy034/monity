@@ -52,7 +52,9 @@ export function SidebarAccountSection({
   if (variant === 'header') {
     return (
       <div className='flex min-w-0 items-center gap-2 border-l border-slate-200 pl-3 dark:border-slate-700'>
-        {avatar}
+        <Link href={withLocale('/settings/profile')} aria-label={t('profile.editProfile')}>
+          {avatar}
+        </Link>
         <div className='hidden min-w-0 xl:block'>
           <p className='max-w-36 truncate text-sm font-semibold text-slate-900 dark:text-slate-100'>
             {displayName || t('profile.yourAccount')}
@@ -62,7 +64,7 @@ export function SidebarAccountSection({
         <Link className={`${financeUi.secondaryButton} hidden h-10 px-3 xl:inline-flex`} href={withLocale('/settings/profile')}>
           {t('profile.editProfile')}
         </Link>
-        <LogoutButton className='hidden h-10 rounded-xl px-3 xl:inline-flex' />
+        <LogoutButton className='hidden h-10 rounded-xl px-3 lg:inline-flex' />
       </div>
     );
   }

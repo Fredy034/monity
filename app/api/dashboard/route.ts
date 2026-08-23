@@ -67,6 +67,17 @@ export async function GET(request: Request) {
   const selectedYearStart = yearStart(selectedYear);
   const selectedYearEnd = yearEnd(selectedYear);
 
+  let recentQuery = client.database
+    .from('transactions')
+    .select('id, account_id, category_id, type, amount, description, transaction_date, created_at')
+    .eq('user_id', session.user.id)
+    .gte('transaction_date', dateOnly(selectedMonthStart))
+    .lte('transaction_date', dateOnly(selectedMonthEnd))
+    .order('transaction_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(10);
+  if (selectedAccountId) recentQuery = recentQuery.eq('account_id', selectedAccountId);
+
   const [accountsRes, categoriesRes, transactionsRes, recentRes, budgetsRes] = await Promise.all([
     client.database
       .from('accounts')
@@ -81,13 +92,7 @@ export async function GET(request: Request) {
       .from('transactions')
       .select('id, account_id, category_id, type, amount, transaction_date')
       .eq('user_id', session.user.id),
-    client.database
-      .from('transactions')
-      .select('id, account_id, category_id, type, amount, description, transaction_date, created_at')
-      .eq('user_id', session.user.id)
-      .order('transaction_date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(10),
+    recentQuery,
     client.database
       .from('budgets')
       .select('id, category_id, period_month, limit_amount')

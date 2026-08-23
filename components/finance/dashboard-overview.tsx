@@ -46,6 +46,7 @@ type DashboardPayload = {
   charts: DashboardChartsPayload;
   budgets: Array<{
     id: string;
+    category_id: string;
     category_name: string;
     limit_amount: number;
     spent: number;
@@ -110,7 +111,7 @@ export function DashboardOverview() {
           net: data.totals.month_net,
         },
         budgets: data.budgets.map((budget) => ({
-          categoryId: budget.id,
+          categoryId: budget.category_id,
           categoryName: budget.category_name,
           limit: budget.limit_amount,
           spent: budget.spent,
