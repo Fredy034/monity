@@ -2,13 +2,19 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 
-import { DashboardCharts, type DashboardChartsPayload } from '@/components/finance/dashboard-charts';
+import {
+  CategorySpendingTrendChart,
+  DashboardCharts,
+  type DashboardChartsPayload,
+} from '@/components/finance/dashboard-charts';
 import { PeriodNavigator } from '@/components/finance/period-navigator';
+import { SmartInsights } from '@/components/finance/smart-insights';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
 import { formatMoney } from '@/lib/finance/formatting';
 import type { DashboardComparisons } from '@/lib/finance/dashboard-analytics';
+import { buildDeterministicInsights } from '@/lib/finance/insights';
 import type { FinancePeriod } from '@/lib/finance/period';
 import { useDashboardExport } from '@/lib/finance/use-dashboard-export';
 import { useI18n } from '@/lib/i18n/client';
@@ -87,6 +93,58 @@ export function DashboardOverview() {
 
   const filteredCategories = useMemo(() => categories.filter((item) => item.type === txType), [categories, txType]);
   const defaultCurrency = data?.accounts[0]?.currency ?? 'USD';
+  const deterministicInsights = useMemo(() => {
+    if (!data) return [];
+    const money = (value: number) => formatMoney(value, { locale, currency: defaultCurrency });
+    return buildDeterministicInsights(
+      {
+        totals: {
+          income: data.totals.month_income,
+          expense: data.totals.month_expense,
+          net: data.totals.month_net,
+        },
+        budgets: data.budgets.map((budget) => ({
+          categoryId: budget.id,
+          categoryName: budget.category_name,
+          limit: budget.limit_amount,
+          spent: budget.spent,
+          utilizationPercent: budget.utilization_percent,
+        })),
+        categories: data.spending_by_category.map((category) => ({
+          categoryId: category.category_id,
+          categoryName: category.category_name,
+          spent: category.spent,
+        })),
+        categoryRecentAverage: data.comparisons.categoryRecentAverage,
+      },
+      {
+        budgetExceeded: (category, amount) => ({
+          title: `${category}: ${t('dashboard.insightBudgetExceededTitle')}`,
+          description: `${t('dashboard.insightBudgetExceededDescription')} ${money(amount)}.`,
+        }),
+        budgetNearLimit: (category, percent) => ({
+          title: `${category}: ${t('dashboard.insightBudgetNearTitle')}`,
+          description: `${percent}% ${t('dashboard.insightBudgetNearDescription')}`,
+        }),
+        negativeNet: (amount) => ({
+          title: t('dashboard.insightNegativeNetTitle'),
+          description: `${t('dashboard.insightNegativeNetDescription')} ${money(amount)}.`,
+        }),
+        savingsRate: (percent) => ({
+          title: t('dashboard.insightSavingsRateTitle'),
+          description: `${t('dashboard.insightSavingsRateDescription')} ${percent}%.`,
+        }),
+        categoryIncrease: (category, percent) => ({
+          title: `${category}: ${t('dashboard.insightCategoryIncreaseTitle')}`,
+          description: `${percent}% ${t('dashboard.insightCategoryIncreaseDescription')}`,
+        }),
+        healthyBudgets: () => ({
+          title: t('dashboard.insightHealthyBudgetsTitle'),
+          description: t('dashboard.insightHealthyBudgetsDescription'),
+        }),
+      },
+    );
+  }, [data, defaultCurrency, locale, t]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(QUICK_ADD_STORAGE_KEY);
@@ -420,6 +478,29 @@ export function DashboardOverview() {
               </StyledSelect>
             </div>
           </div>
+        </section>
+
+        <section className='grid gap-4 xl:grid-cols-[1.55fr_1fr]'>
+          <CategorySpendingTrendChart
+            trend={data.charts.category_spending_trend}
+            locale={locale}
+            currency={defaultCurrency}
+            title={t('dashboard.categoryTrendTitle')}
+            subtitle={t('dashboard.categoryTrendSubtitle')}
+            emptyText={t('dashboard.noCategoryTrendData')}
+          />
+          <SmartInsights
+            insights={deterministicInsights}
+            copy={{
+              title: t('dashboard.smartInsightsTitle'),
+              subtitle: t('dashboard.smartInsightsSubtitle'),
+              empty: t('dashboard.noInsights'),
+              generate: t('dashboard.generateDeeperAnalysis'),
+              generating: t('dashboard.generatingAnalysis'),
+              aiGenerated: t('dashboard.aiGenerated'),
+              retry: t('common.retry'),
+            }}
+          />
         </section>
 
         {canRenderCharts ? (

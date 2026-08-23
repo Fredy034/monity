@@ -9,6 +9,8 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  Line,
+  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -105,6 +107,67 @@ function ChartSlot({ className, children }: { className: string; children: React
     <div ref={ref} className={className}>
       {ready ? children : null}
     </div>
+  );
+}
+
+export function CategorySpendingTrendChart({
+  trend,
+  locale,
+  currency,
+  title,
+  subtitle,
+  emptyText,
+}: {
+  trend: CategoryTrendPoint;
+  locale: string;
+  currency: string;
+  title: string;
+  subtitle: string;
+  emptyText: string;
+}) {
+  const rows = trend.months.map((month, index) => {
+    const row: Record<string, string | number> = {
+      month: `${formatMonthLabel(month.month, locale)} ${String(month.year).slice(-2)}`,
+    };
+    for (const series of trend.series) row[series.categoryId] = series.values[index] ?? 0;
+    return row;
+  });
+  const hasData = trend.series.some((series) => series.total > 0);
+
+  return (
+    <article className={`${financeUi.formCard} min-w-0`}>
+      <header className='mb-3'>
+        <h2 className={financeUi.sectionTitle}>{title}</h2>
+        <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{subtitle}</p>
+      </header>
+      {hasData ? (
+        <ChartSlot className='h-72 min-w-0'>
+          <ResponsiveContainer width='100%' height='100%'>
+            <LineChart data={rows}>
+              <CartesianGrid strokeDasharray='3 3' stroke='#e2e8f0' vertical={false} />
+              <XAxis dataKey='month' tick={{ fill: '#475569', fontSize: 12 }} />
+              <YAxis tick={{ fill: '#475569', fontSize: 12 }} tickFormatter={(value) => compactMoney(value)} />
+              <Tooltip formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })} />
+              <Legend />
+              {trend.series.map((series) => (
+                <Line
+                  key={series.categoryId}
+                  type='monotone'
+                  dataKey={series.categoryId}
+                  name={series.categoryName}
+                  stroke={series.color}
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartSlot>
+      ) : (
+        <div className={financeUi.emptyState}>{emptyText}</div>
+      )}
+    </article>
   );
 }
 
