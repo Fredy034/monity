@@ -3,6 +3,7 @@
 import { useI18n } from '@/lib/i18n/client';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
@@ -41,47 +42,70 @@ export function FinanceShell({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { t, withLocale } = useI18n();
+  const pathname = usePathname();
 
   function closeSidebar() {
     setIsSidebarOpen(false);
   }
 
+  function isActive(href: string) {
+    return pathname === href || pathname.endsWith(href);
+  }
+
   return (
     <main className={financeUi.shellBackground}>
-      <div className='mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[280px_minmax(0,1fr)]'>
-        <aside className={`${financeUi.panel} hidden h-fit flex-col lg:sticky lg:top-6 lg:flex`}>
-          <div className='p-1'>
+      <div className='mx-auto w-full max-w-7xl'>
+        <section className={`${financeUi.panel} min-w-0`}>
+          <div className='flex items-center justify-between gap-4 border-b border-slate-200 pb-4 dark:border-slate-700'>
             <Image
               src='/monity-logo_black.png'
               alt={t('common.appName')}
               width={180}
               height={24}
               priority
-              className='h-auto w-36'
+              className='h-auto w-36 dark:brightness-0 dark:invert'
             />
+            <div className='flex items-center gap-1'>
+              <LanguageSwitcher className='px-2 py-1 dark:text-slate-300' />
+              <ThemeToggle />
+              <button
+                type='button'
+                className='ml-1 inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300 lg:hidden'
+                onClick={() => setIsSidebarOpen(true)}
+                aria-label={t('nav.openNavigation')}
+              >
+                {t('common.menu')}
+              </button>
+              <div className='hidden lg:block'>
+                <SidebarAccountSection
+                  email={account?.email}
+                  displayName={account?.displayName}
+                  avatarUrl={account?.avatarUrl}
+                  variant='header'
+                />
+              </div>
+            </div>
           </div>
-          <nav className='mt-2 mb-4 flex flex-col gap-1'>
+
+          <nav className='hidden items-center gap-1 overflow-x-auto border-b border-slate-200 py-2 dark:border-slate-700 lg:flex'>
             {links.map((item) => (
               <Link
                 key={item.href}
                 href={withLocale(item.href)}
                 onClick={closeSidebar}
-                className='rounded-xl px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-100'
+                aria-current={isActive(item.href) ? 'page' : undefined}
+                className={`whitespace-nowrap rounded-lg border-b-2 px-3 py-2 text-sm font-medium transition ${
+                  isActive(item.href)
+                    ? 'border-cyan-600 bg-cyan-50 text-cyan-700 dark:border-cyan-400 dark:bg-cyan-950/30 dark:text-cyan-300'
+                    : 'border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-100'
+                }`}
               >
                 {t(item.key)}
               </Link>
             ))}
           </nav>
 
-          <SidebarAccountSection
-            email={account?.email}
-            displayName={account?.displayName}
-            avatarUrl={account?.avatarUrl}
-          />
-        </aside>
-
-        <section className={`${financeUi.panel} min-w-0`}>
-          <header className='mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-700 pb-5'>
+          <header className='mb-6 mt-5 flex flex-wrap items-start justify-between gap-4'>
             <div>
               <h1 className='text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 sm:text-3xl'>
                 {title}
@@ -89,16 +113,6 @@ export function FinanceShell({
               {subtitle ? <p className='mt-2 text-sm text-slate-600 dark:text-slate-400'>{subtitle}</p> : null}
             </div>
             <div className='flex w-full flex-wrap items-center gap-1 sm:w-auto sm:justify-end'>
-              <LanguageSwitcher className='dark:text-slate-300 px-2 py-1' />
-              <ThemeToggle />
-              <button
-                type='button'
-                className='ml-2 inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 lg:hidden'
-                onClick={() => setIsSidebarOpen(true)}
-                aria-label={t('nav.openNavigation')}
-              >
-                {t('common.menu')}
-              </button>
               {actions ? <div>{actions}</div> : null}
             </div>
           </header>
@@ -141,7 +155,12 @@ export function FinanceShell({
                   key={item.href}
                   href={withLocale(item.href)}
                   onClick={closeSidebar}
-                  className='rounded-xl px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900'
+                aria-current={isActive(item.href) ? 'page' : undefined}
+                className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                  isActive(item.href)
+                    ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-300'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800'
+                }`}
                 >
                   {t(item.key)}
                 </Link>

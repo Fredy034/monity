@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { applyRecurringForUser } from '@/lib/finance/recurring';
+import { buildCategoryTrend, buildDashboardComparisons } from '@/lib/finance/dashboard-analytics';
 import { signedAmount, type TransactionType } from '@/lib/finance/validation';
 import { jsonError } from '@/lib/insforge/api';
 import { getApiSessionContext, withSessionCookies } from '@/lib/insforge/route-session';
@@ -66,6 +67,17 @@ export async function GET(request: Request) {
   const selectedYearStart = yearStart(selectedYear);
   const selectedYearEnd = yearEnd(selectedYear);
 
+  let recentQuery = client.database
+    .from('transactions')
+    .select('id, account_id, category_id, type, amount, description, transaction_date, created_at')
+    .eq('user_id', session.user.id)
+    .gte('transaction_date', dateOnly(selectedMonthStart))
+    .lte('transaction_date', dateOnly(selectedMonthEnd))
+    .order('transaction_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(10);
+  if (selectedAccountId) recentQuery = recentQuery.eq('account_id', selectedAccountId);
+
   const [accountsRes, categoriesRes, transactionsRes, recentRes, budgetsRes] = await Promise.all([
     client.database
       .from('accounts')
@@ -80,13 +92,7 @@ export async function GET(request: Request) {
       .from('transactions')
       .select('id, account_id, category_id, type, amount, transaction_date')
       .eq('user_id', session.user.id),
-    client.database
-      .from('transactions')
-      .select('id, account_id, category_id, type, amount, description, transaction_date, created_at')
-      .eq('user_id', session.user.id)
-      .order('transaction_date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(10),
+    recentQuery,
     client.database
       .from('budgets')
       .select('id, category_id, period_month, limit_amount')
@@ -101,9 +107,29 @@ export async function GET(request: Request) {
     return jsonError(500, 'DASHBOARD_READ_FAILED', firstError.message);
   }
 
+  if (selectedAccountId && !(accountsRes.data ?? []).some((account) => account.id === selectedAccountId)) {
+    return jsonError(400, 'INVALID_ACCOUNT_SCOPE', 'The selected account does not belong to you.');
+  }
+
   const categories = categoriesRes.data ?? [];
   const txs = transactionsRes.data ?? [];
   const filteredTransactions = selectedAccountId ? txs.filter((item) => item.account_id === selectedAccountId) : txs;
+  const analyticsTransactions = filteredTransactions.map((item) => ({
+    categoryId: item.category_id,
+    amount: Number(item.amount),
+    transactionDate: item.transaction_date,
+    type: item.type as 'income' | 'expense',
+  }));
+  const analyticsCategories = categories.map((item) => ({ id: item.id, name: item.name, color: item.color }));
+  const categorySpendingTrend = buildCategoryTrend({
+    period: { year: selectedYear, month: selectedMonth },
+    transactions: analyticsTransactions,
+    categories: analyticsCategories,
+  });
+  const comparisons = buildDashboardComparisons({
+    period: { year: selectedYear, month: selectedMonth },
+    transactions: analyticsTransactions,
+  });
   const recentTransactions = (recentRes.data ?? []).map((item) => ({
     ...item,
     amount: Number(item.amount),
@@ -282,6 +308,7 @@ export async function GET(request: Request) {
         recent_transactions: recentTransactions,
         spending_by_category: spendingByCategory,
         budgets,
+        comparisons,
         charts: {
           selected_year: selectedYear,
           selected_month: selectedMonth,
@@ -290,6 +317,7 @@ export async function GET(request: Request) {
           monthly_cash_flow: monthlyFlow,
           spending_by_category: chartSpendingByCategory,
           expenses_by_account: chartExpensesByAccount,
+          category_spending_trend: categorySpendingTrend,
         },
       },
     }),

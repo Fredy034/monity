@@ -1,13 +1,22 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { DashboardCharts, type DashboardChartsPayload } from '@/components/finance/dashboard-charts';
-import { DashboardMonthSelect } from '@/components/finance/dashboard-month-select';
+import {
+  CategorySpendingTrendChart,
+  DashboardCharts,
+  type DashboardChartsPayload,
+} from '@/components/finance/dashboard-charts';
+import { PeriodNavigator } from '@/components/finance/period-navigator';
+import { SmartInsights } from '@/components/finance/smart-insights';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
 import { formatMoney } from '@/lib/finance/formatting';
+import type { DashboardComparisons } from '@/lib/finance/dashboard-analytics';
+import { buildDeterministicInsights } from '@/lib/finance/insights';
+import type { AiInsightResult } from '@/lib/finance/ai-insights';
+import { parseFinancePeriodParams, type FinancePeriod } from '@/lib/finance/period';
 import { useDashboardExport } from '@/lib/finance/use-dashboard-export';
 import { useI18n } from '@/lib/i18n/client';
 
@@ -37,12 +46,14 @@ type DashboardPayload = {
   charts: DashboardChartsPayload;
   budgets: Array<{
     id: string;
+    category_id: string;
     category_name: string;
     limit_amount: number;
     spent: number;
     utilization_percent: number;
     is_exceeded: boolean;
   }>;
+  comparisons: DashboardComparisons;
 };
 
 type Category = {
@@ -65,10 +76,16 @@ export function DashboardOverview() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [aiInsightResult, setAiInsightResult] = useState<AiInsightResult | null>(null);
+  const [aiInsightError, setAiInsightError] = useState<string | null>(null);
   const [canRenderCharts, setCanRenderCharts] = useState(false);
 
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
+  const [selectedPeriod, setSelectedPeriod] = useState<FinancePeriod>({ year: currentYear, month: currentMonth });
+  const [hasLoadedPeriodFromUrl, setHasLoadedPeriodFromUrl] = useState(false);
+  const dashboardRequestIdRef = useRef(0);
+  const selectedYear = selectedPeriod.year;
+  const selectedMonth = selectedPeriod.month;
   const [selectedAccountScope, setSelectedAccountScope] = useState<string>('all');
 
   const [txType, setTxType] = useState<'income' | 'expense'>('expense');
@@ -83,6 +100,58 @@ export function DashboardOverview() {
 
   const filteredCategories = useMemo(() => categories.filter((item) => item.type === txType), [categories, txType]);
   const defaultCurrency = data?.accounts[0]?.currency ?? 'USD';
+  const deterministicInsights = useMemo(() => {
+    if (!data) return [];
+    const money = (value: number) => formatMoney(value, { locale, currency: defaultCurrency });
+    return buildDeterministicInsights(
+      {
+        totals: {
+          income: data.totals.month_income,
+          expense: data.totals.month_expense,
+          net: data.totals.month_net,
+        },
+        budgets: data.budgets.map((budget) => ({
+          categoryId: budget.category_id,
+          categoryName: budget.category_name,
+          limit: budget.limit_amount,
+          spent: budget.spent,
+          utilizationPercent: budget.utilization_percent,
+        })),
+        categories: data.spending_by_category.map((category) => ({
+          categoryId: category.category_id,
+          categoryName: category.category_name,
+          spent: category.spent,
+        })),
+        categoryRecentAverage: data.comparisons.categoryRecentAverage,
+      },
+      {
+        budgetExceeded: (category, amount) => ({
+          title: `${category}: ${t('dashboard.insightBudgetExceededTitle')}`,
+          description: `${t('dashboard.insightBudgetExceededDescription')} ${money(amount)}.`,
+        }),
+        budgetNearLimit: (category, percent) => ({
+          title: `${category}: ${t('dashboard.insightBudgetNearTitle')}`,
+          description: `${percent}% ${t('dashboard.insightBudgetNearDescription')}`,
+        }),
+        negativeNet: (amount) => ({
+          title: t('dashboard.insightNegativeNetTitle'),
+          description: `${t('dashboard.insightNegativeNetDescription')} ${money(amount)}.`,
+        }),
+        savingsRate: (percent) => ({
+          title: t('dashboard.insightSavingsRateTitle'),
+          description: `${t('dashboard.insightSavingsRateDescription')} ${percent}%.`,
+        }),
+        categoryIncrease: (category, percent) => ({
+          title: `${category}: ${t('dashboard.insightCategoryIncreaseTitle')}`,
+          description: `${percent}% ${t('dashboard.insightCategoryIncreaseDescription')}`,
+        }),
+        healthyBudgets: () => ({
+          title: t('dashboard.insightHealthyBudgetsTitle'),
+          description: t('dashboard.insightHealthyBudgetsDescription'),
+        }),
+      },
+    );
+  }, [data, defaultCurrency, locale, t]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(QUICK_ADD_STORAGE_KEY);
@@ -99,38 +168,65 @@ export function DashboardOverview() {
   }, [hasLoadedQuickAddPreference, isQuickAddOpen]);
 
   const fetchDashboard = useCallback(async () => {
+    const requestId = ++dashboardRequestIdRef.current;
     const query = new URLSearchParams({ year: String(selectedYear), month: String(selectedMonth) });
     if (selectedAccountScope !== 'all') {
       query.set('accountId', selectedAccountScope);
     }
 
-    const response = await fetch(`/api/dashboard?${query.toString()}`);
-    const payload = await response.json();
-    if (!response.ok) {
-      const message = payload.message ?? t('dashboard.loadFailed');
+    try {
+      const response = await fetch(`/api/dashboard?${query.toString()}`);
+      const payload = await response.json();
+      if (requestId !== dashboardRequestIdRef.current) return;
+      if (!response.ok) {
+        const message = payload.message ?? t('dashboard.loadFailed');
+        setError(message);
+        addToast({ title: t('dashboard.loadErrorTitle'), description: message, variant: 'error' });
+        return;
+      }
+
+      setError(null);
+      setData(payload.data);
+
+      const nextYear = Number(payload.data?.charts?.selected_year ?? selectedYear);
+      if (Number.isFinite(nextYear) && nextYear !== selectedYear) {
+        setSelectedPeriod((period) => ({ ...period, year: nextYear }));
+      }
+
+      const nextMonth = Number(payload.data?.charts?.selected_month ?? selectedMonth);
+      if (Number.isFinite(nextMonth) && nextMonth >= 1 && nextMonth <= 12 && nextMonth !== selectedMonth) {
+        setSelectedPeriod((period) => ({ ...period, month: nextMonth }));
+      }
+
+      const nextAccount = (payload.data?.charts?.selected_account_id as string | null) ?? 'all';
+      if (nextAccount !== selectedAccountScope) {
+        setSelectedAccountScope(nextAccount);
+      }
+    } catch {
+      if (requestId !== dashboardRequestIdRef.current) return;
+      const message = t('dashboard.loadFailed');
       setError(message);
       addToast({ title: t('dashboard.loadErrorTitle'), description: message, variant: 'error' });
-      return;
-    }
-
-    setError(null);
-    setData(payload.data);
-
-    const nextYear = Number(payload.data?.charts?.selected_year ?? selectedYear);
-    if (Number.isFinite(nextYear) && nextYear !== selectedYear) {
-      setSelectedYear(nextYear);
-    }
-
-    const nextMonth = Number(payload.data?.charts?.selected_month ?? selectedMonth);
-    if (Number.isFinite(nextMonth) && nextMonth >= 1 && nextMonth <= 12 && nextMonth !== selectedMonth) {
-      setSelectedMonth(nextMonth);
-    }
-
-    const nextAccount = (payload.data?.charts?.selected_account_id as string | null) ?? 'all';
-    if (nextAccount !== selectedAccountScope) {
-      setSelectedAccountScope(nextAccount);
     }
   }, [addToast, selectedAccountScope, selectedMonth, selectedYear, t]);
+
+  useEffect(() => {
+    setSelectedPeriod(
+      parseFinancePeriodParams(new URLSearchParams(window.location.search), {
+        year: currentYear,
+        month: currentMonth,
+      }),
+    );
+    setHasLoadedPeriodFromUrl(true);
+  }, [currentMonth, currentYear]);
+
+  useEffect(() => {
+    if (!hasLoadedPeriodFromUrl) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set('year', String(selectedYear));
+    params.set('month', String(selectedMonth));
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+  }, [hasLoadedPeriodFromUrl, selectedMonth, selectedYear]);
 
   const fetchCategories = useCallback(async () => {
     const response = await fetch('/api/categories');
@@ -161,6 +257,11 @@ export function DashboardOverview() {
       setQuickAddAccountId(data.accounts[0].id);
     }
   }, [data?.accounts, quickAddAccountId]);
+
+  useEffect(() => {
+    setAiInsightResult(null);
+    setAiInsightError(null);
+  }, [selectedAccountScope, selectedMonth, selectedYear]);
 
   useEffect(() => {
     if (!categoryId && filteredCategories[0]?.id) {
@@ -251,6 +352,32 @@ export function DashboardOverview() {
       });
     } finally {
       setIsExporting(false);
+    }
+  }
+
+  async function handleGenerateInsights() {
+    setIsGeneratingInsights(true);
+    setAiInsightError(null);
+    try {
+      const response = await fetch('/api/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          year: selectedYear,
+          month: selectedMonth,
+          ...(selectedAccountScope !== 'all' ? { accountId: selectedAccountScope } : {}),
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setAiInsightError(payload.message ?? t('dashboard.aiAnalysisFailed'));
+        return;
+      }
+      setAiInsightResult(payload.data as AiInsightResult);
+    } catch {
+      setAiInsightError(t('dashboard.aiAnalysisFailed'));
+    } finally {
+      setIsGeneratingInsights(false);
     }
   }
 
@@ -394,24 +521,13 @@ export function DashboardOverview() {
         </section>
 
         <section className={financeUi.formCard}>
-          <div className='flex flex-wrap items-end gap-3'>
-            <div className='min-w-40 flex-1'>
-              <label className={financeUi.label}>{t('dashboard.periodYear')}</label>
-              <StyledSelect
-                value={String(selectedYear)}
-                onChange={(event) => setSelectedYear(Number(event.target.value))}
-              >
-                {(data.charts.available_years.length > 0 ? data.charts.available_years : [selectedYear]).map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </StyledSelect>
-            </div>
-            <div className='min-w-40 flex-1'>
-              <label className={financeUi.label}>{t('dashboard.periodMonth')}</label>
-              <DashboardMonthSelect value={selectedMonth} locale={locale} onChange={setSelectedMonth} />
-            </div>
+          <div className='flex flex-wrap items-end justify-between gap-3'>
+            <PeriodNavigator
+              value={selectedPeriod}
+              availableYears={data.charts.available_years}
+              locale={locale}
+              onChange={setSelectedPeriod}
+            />
             <div className='min-w-55 flex-[1.4]'>
               <label className={financeUi.label}>{t('dashboard.accountScope')}</label>
               <StyledSelect
@@ -427,6 +543,34 @@ export function DashboardOverview() {
               </StyledSelect>
             </div>
           </div>
+        </section>
+
+        <section className='grid gap-4 xl:grid-cols-[1.55fr_1fr]'>
+          <CategorySpendingTrendChart
+            trend={data.charts.category_spending_trend}
+            locale={locale}
+            currency={defaultCurrency}
+            title={t('dashboard.categoryTrendTitle')}
+            subtitle={t('dashboard.categoryTrendSubtitle')}
+            emptyText={t('dashboard.noCategoryTrendData')}
+          />
+          <SmartInsights
+            insights={deterministicInsights}
+            onGenerate={handleGenerateInsights}
+            isGenerating={isGeneratingInsights}
+            aiResult={aiInsightResult}
+            aiError={aiInsightError}
+            copy={{
+              title: t('dashboard.smartInsightsTitle'),
+              subtitle: t('dashboard.smartInsightsSubtitle'),
+              empty: t('dashboard.noInsights'),
+              generate: t('dashboard.generateDeeperAnalysis'),
+              generating: t('dashboard.generatingAnalysis'),
+              aiGenerated: t('dashboard.aiGenerated'),
+              
+              retry: t('common.retry'),
+            }}
+          />
         </section>
 
         {canRenderCharts ? (

@@ -5,10 +5,13 @@ import { createPortal } from 'react-dom';
 
 import { ActionButton } from '@/components/finance/action-button';
 import { DeleteConfirmDialog } from '@/components/finance/delete-confirm-dialog';
+import { PeriodNavigator } from '@/components/finance/period-navigator';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
 import { formatMoney } from '@/lib/finance/formatting';
+import { parseFinancePeriodParams, type FinancePeriod } from '@/lib/finance/period';
+import { resolveTransactionDateWindow } from '@/lib/finance/transaction-period';
 import { useTransactionExport } from '@/lib/finance/use-transaction-export';
 import { useI18n } from '@/lib/i18n/client';
 
@@ -64,6 +67,12 @@ export function TransactionsManager() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const currentPeriod = useMemo(() => {
+    const now = new Date();
+    return { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 };
+  }, []);
+  const [selectedPeriod, setSelectedPeriod] = useState<FinancePeriod>(currentPeriod);
+  const [hasLoadedPeriodFromUrl, setHasLoadedPeriodFromUrl] = useState(false);
 
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [accountId, setAccountId] = useState('');
@@ -93,6 +102,7 @@ export function TransactionsManager() {
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const transactionsRequestIdRef = useRef(0);
 
   const filteredCategories = categories.filter((item) => item.type === type);
   const accountMap = useMemo(() => new Map(accounts.map((item) => [item.id, item])), [accounts]);
@@ -101,6 +111,14 @@ export function TransactionsManager() {
     if (filterType === 'all') return categories;
     return categories.filter((category) => category.type === filterType);
   }, [categories, filterType]);
+  const dateWindow = useMemo(
+    () => resolveTransactionDateWindow(selectedPeriod, { fromDate, toDate }),
+    [fromDate, selectedPeriod, toDate],
+  );
+  const availableYears = useMemo(
+    () => Array.from(new Set([selectedPeriod.year, ...Array.from({ length: 7 }, (_, index) => currentPeriod.year - 5 + index)])),
+    [currentPeriod.year, selectedPeriod.year],
+  );
 
   const loadLookups = useCallback(async () => {
     const [accountsRes, categoriesRes] = await Promise.all([fetch('/api/accounts'), fetch('/api/categories')]);
@@ -122,6 +140,7 @@ export function TransactionsManager() {
 
   const fetchTransactions = useCallback(
     async ({ cursor, reset }: { cursor?: string | null; reset: boolean }) => {
+      const requestId = ++transactionsRequestIdRef.current;
       if (reset) {
         setIsLoading(true);
       } else {
@@ -137,8 +156,8 @@ export function TransactionsManager() {
         if (cursor) params.set('cursor', cursor);
         if (filterType !== 'all') params.set('type', filterType);
         if (filterCategoryId !== 'all') params.set('categoryId', filterCategoryId);
-        if (fromDate) params.set('fromDate', fromDate);
-        if (toDate) params.set('toDate', toDate);
+        params.set('fromDate', dateWindow.fromDate);
+        params.set('toDate', dateWindow.toDate);
         if (minAmount.trim()) params.set('minAmount', minAmount.trim());
         if (maxAmount.trim()) params.set('maxAmount', maxAmount.trim());
 
@@ -149,6 +168,7 @@ export function TransactionsManager() {
 
         const response = await fetch(`/api/transactions?${params.toString()}`);
         const payload = (await response.json()) as TransactionsPagePayload;
+        if (requestId !== transactionsRequestIdRef.current) return;
 
         if (!response.ok) {
           const message = payload.message ?? t('transactions.loadFailed');
@@ -164,13 +184,33 @@ export function TransactionsManager() {
         setTransactions((prev) => (reset ? nextBatch : appendWithoutDuplicates(prev, nextBatch)));
         setNextCursor(nextPageCursor);
         setHasMore(nextHasMore);
+      } catch {
+        if (requestId !== transactionsRequestIdRef.current) return;
+        const message = t('transactions.loadFailed');
+        setError(message);
+        addToast({ title: t('transactions.loadErrorTitle'), description: message, variant: 'error' });
       } finally {
-        setIsLoading(false);
-        setIsLoadingMore(false);
+        if (requestId === transactionsRequestIdRef.current) {
+          setIsLoading(false);
+          setIsLoadingMore(false);
+        }
       }
     },
-    [addToast, debouncedSearchQuery, filterCategoryId, filterType, fromDate, maxAmount, minAmount, t, toDate],
+    [addToast, dateWindow.fromDate, dateWindow.toDate, debouncedSearchQuery, filterCategoryId, filterType, maxAmount, minAmount, t],
   );
+
+  useEffect(() => {
+    setSelectedPeriod(parseFinancePeriodParams(new URLSearchParams(window.location.search), currentPeriod));
+    setHasLoadedPeriodFromUrl(true);
+  }, [currentPeriod]);
+
+  useEffect(() => {
+    if (!hasLoadedPeriodFromUrl) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set('year', String(selectedPeriod.year));
+    params.set('month', String(selectedPeriod.month));
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+  }, [hasLoadedPeriodFromUrl, selectedPeriod]);
 
   useEffect(() => {
     void loadLookups();
@@ -415,6 +455,19 @@ export function TransactionsManager() {
 
   return (
     <div className='space-y-6'>
+      <section className={`${financeUi.formCard} flex flex-wrap items-center justify-between gap-3`}>
+        <div>
+          <h2 className={financeUi.sectionTitle}>{t('transactions.selectedPeriod')}</h2>
+          <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{t('transactions.selectedPeriodDescription')}</p>
+        </div>
+        <PeriodNavigator
+          value={selectedPeriod}
+          availableYears={availableYears}
+          locale={locale}
+          onChange={setSelectedPeriod}
+        />
+      </section>
+
       <section className={financeUi.formCard}>
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <h2 className={financeUi.sectionTitle}>{t('transactions.addPanelTitle')}</h2>
@@ -584,6 +637,22 @@ export function TransactionsManager() {
                 onChange={(event) => setToDate(event.target.value)}
               />
             </div>
+
+            {dateWindow.isCustom ? (
+              <div className='rounded-xl border border-cyan-200 bg-cyan-50 p-3 dark:border-cyan-900/60 dark:bg-cyan-950/20 sm:col-span-2'>
+                <p className='text-sm font-medium text-cyan-900 dark:text-cyan-100'>{t('transactions.customRangeActive')}</p>
+                <button
+                  type='button'
+                  className='mt-2 text-sm font-semibold text-cyan-700 underline underline-offset-2 dark:text-cyan-300'
+                  onClick={() => {
+                    setFromDate('');
+                    setToDate('');
+                  }}
+                >
+                  {t('transactions.returnToSelectedMonth')}
+                </button>
+              </div>
+            ) : null}
 
             <div>
               <label className={financeUi.label}>{t('transactions.minAmount')}</label>
