@@ -176,6 +176,7 @@ export const es = {
     generateDeeperAnalysis: 'Generar análisis más profundo',
     generatingAnalysis: 'Generando análisis...',
     aiGenerated: 'Análisis generado por IA',
+    aiAnalysisFailed: 'El análisis más profundo no está disponible temporalmente. Tus recomendaciones privadas siguen visibles.',
     insightBudgetExceededTitle: 'presupuesto excedido',
     insightBudgetExceededDescription: 'El gasto supera el límite por',
     insightBudgetNearTitle: 'presupuesto requiere atención',

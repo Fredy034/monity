@@ -1,12 +1,8 @@
 'use client';
 
 import { financeUi } from '@/components/finance/ui';
+import type { AiInsightResult } from '@/lib/finance/ai-insights';
 import type { DeterministicInsight } from '@/lib/finance/insights';
-
-export type AiInsightResult = {
-  summary: string;
-  observations: Array<{ title: string; explanation: string; action: string }>;
-};
 
 export function SmartInsights({
   insights,
@@ -66,6 +62,15 @@ export function SmartInsights({
         <div className='mt-3 rounded-xl border border-violet-200 bg-violet-50 p-3 dark:border-violet-900/60 dark:bg-violet-950/20'>
           <p className='text-xs font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300'>{copy.aiGenerated}</p>
           <p className='mt-2 text-sm text-slate-700 dark:text-slate-200'>{aiResult.summary}</p>
+          <div className='mt-3 space-y-2'>
+            {aiResult.observations.map((observation) => (
+              <div key={`${observation.title}-${observation.action}`} className='rounded-lg bg-white/70 p-2 dark:bg-slate-900/30'>
+                <h3 className='text-sm font-semibold text-slate-900 dark:text-slate-100'>{observation.title}</h3>
+                <p className='mt-1 text-sm text-slate-600 dark:text-slate-300'>{observation.explanation}</p>
+                <p className='mt-1 text-xs font-medium text-violet-700 dark:text-violet-300'>{observation.action}</p>
+              </div>
+            ))}
+          </div>
         </div>
       ) : null}
       {aiError ? <p className='mt-3 text-sm text-rose-600 dark:text-rose-400'>{aiError}</p> : null}

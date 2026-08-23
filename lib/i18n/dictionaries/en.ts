@@ -173,6 +173,7 @@ export const en = {
     generateDeeperAnalysis: 'Generate deeper analysis',
     generatingAnalysis: 'Generating analysis...',
     aiGenerated: 'AI-generated analysis',
+    aiAnalysisFailed: 'The deeper analysis is temporarily unavailable. Your private insights are still shown above.',
     insightBudgetExceededTitle: 'budget exceeded',
     insightBudgetExceededDescription: 'Spending is over the limit by',
     insightBudgetNearTitle: 'budget needs attention',

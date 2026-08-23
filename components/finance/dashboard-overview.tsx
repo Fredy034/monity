@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/toast-provider';
 import { formatMoney } from '@/lib/finance/formatting';
 import type { DashboardComparisons } from '@/lib/finance/dashboard-analytics';
 import { buildDeterministicInsights } from '@/lib/finance/insights';
+import type { AiInsightResult } from '@/lib/finance/ai-insights';
 import type { FinancePeriod } from '@/lib/finance/period';
 import { useDashboardExport } from '@/lib/finance/use-dashboard-export';
 import { useI18n } from '@/lib/i18n/client';
@@ -74,6 +75,9 @@ export function DashboardOverview() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [aiInsightResult, setAiInsightResult] = useState<AiInsightResult | null>(null);
+  const [aiInsightError, setAiInsightError] = useState<string | null>(null);
   const [canRenderCharts, setCanRenderCharts] = useState(false);
 
   const [selectedPeriod, setSelectedPeriod] = useState<FinancePeriod>({ year: currentYear, month: currentMonth });
@@ -225,6 +229,11 @@ export function DashboardOverview() {
   }, [data?.accounts, quickAddAccountId]);
 
   useEffect(() => {
+    setAiInsightResult(null);
+    setAiInsightError(null);
+  }, [selectedAccountScope, selectedMonth, selectedYear]);
+
+  useEffect(() => {
     if (!categoryId && filteredCategories[0]?.id) {
       setCategoryId(filteredCategories[0].id);
     }
@@ -313,6 +322,32 @@ export function DashboardOverview() {
       });
     } finally {
       setIsExporting(false);
+    }
+  }
+
+  async function handleGenerateInsights() {
+    setIsGeneratingInsights(true);
+    setAiInsightError(null);
+    try {
+      const response = await fetch('/api/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          year: selectedYear,
+          month: selectedMonth,
+          ...(selectedAccountScope !== 'all' ? { accountId: selectedAccountScope } : {}),
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setAiInsightError(payload.message ?? t('dashboard.aiAnalysisFailed'));
+        return;
+      }
+      setAiInsightResult(payload.data as AiInsightResult);
+    } catch {
+      setAiInsightError(t('dashboard.aiAnalysisFailed'));
+    } finally {
+      setIsGeneratingInsights(false);
     }
   }
 
@@ -491,6 +526,10 @@ export function DashboardOverview() {
           />
           <SmartInsights
             insights={deterministicInsights}
+            onGenerate={handleGenerateInsights}
+            isGenerating={isGeneratingInsights}
+            aiResult={aiInsightResult}
+            aiError={aiInsightError}
             copy={{
               title: t('dashboard.smartInsightsTitle'),
               subtitle: t('dashboard.smartInsightsSubtitle'),
@@ -498,6 +537,7 @@ export function DashboardOverview() {
               generate: t('dashboard.generateDeeperAnalysis'),
               generating: t('dashboard.generatingAnalysis'),
               aiGenerated: t('dashboard.aiGenerated'),
+              
               retry: t('common.retry'),
             }}
           />
