@@ -10,11 +10,14 @@ Monity is a secure personal finance tracker built with Next.js and InsForge.
 - **Recurring Expenses**: Automate regular expenses with flexible scheduling and automatic transaction generation.
 - **Categories**: Organize your finances with system and custom categories, color coding, and easy editing.
 - **Dashboard & Insights**: Visualize balances, income, expenses, and trends with interactive charts and analytics.
+- **Period Navigation**: Move month by month across years on Dashboard and Transactions, with URL-persisted selections.
+- **Privacy-first Guidance**: Get deterministic spending recommendations and optionally request deeper AI analysis using anonymized aggregates only.
 - **Authentication & Security**: Secure login, email verification, Google OAuth, and privacy-first data protection.
 - **Localization**: Multi-language support and locale-aware money formatting for a global experience.
 - **Profile Management**: Edit your display name, avatar, and email; profile data is persisted securely.
 - **Collapsible Panels**: Dashboard quick add and transaction filter/add panels are collapsible and persist state locally.
 - **Mobile Friendly**: Responsive design and refined mobile finance interactions.
+- **Top Navigation**: Two-tier desktop navigation keeps the full page width available for charts and transaction data.
 
 ---
 
@@ -216,6 +219,8 @@ Create `.env.local`:
 NEXT_PUBLIC_INSFORGE_URL=https://your-project.insforge.app
 NEXT_PUBLIC_INSFORGE_ANON_KEY=your-anon-key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+OPENROUTER_API_KEY=your-server-only-openrouter-key
+OPENROUTER_CHAT_MODEL=openai/gpt-4o
 ```
 
 Supported aliases in code:
@@ -223,6 +228,7 @@ Supported aliases in code:
 - InsForge URL: `NEXT_PUBLIC_INSFORGE_URL` or `INSFORGE_URL` or `INSFORGE_BASE_URL`
 - Anon key: `NEXT_PUBLIC_INSFORGE_ANON_KEY` or `INSFORGE_ANON_KEY`
 - App URL: `NEXT_PUBLIC_APP_URL` or `APP_URL`
+- Optional AI insights: `OPENROUTER_API_KEY` and `OPENROUTER_CHAT_MODEL` remain server-only and must never use a `NEXT_PUBLIC_` prefix.
 
 ## Setup and Run
 
@@ -458,7 +464,7 @@ Recurring payload (create):
 
 ### Dashboard
 
-- `GET /api/dashboard`
+- `GET /api/dashboard?year=YYYY&month=M&accountId=`
 
 Returns aggregated finance data:
 
@@ -467,6 +473,14 @@ Returns aggregated finance data:
 - recent transactions (latest 10)
 - spending by category (current month)
 - budgets with utilization and exceeded flag
+- six-month category spending trends and prior-period comparison aggregates
+
+### Optional AI Insights
+
+- `POST /api/insights`
+  - body: `{ year, month, accountId? }`
+
+The endpoint reloads authorized finance aggregates server-side and sends only an allowlisted anonymous payload to OpenRouter. It never forwards transaction descriptions or identifiers, account names or identifiers, user/profile fields, email addresses, or authentication/session values. AI responses are not persisted, and deterministic Dashboard insights remain available when the model service is unavailable.
 
 ## Frontend Routes
 
@@ -485,6 +499,8 @@ Protected finance pages:
 - `/recurring-expenses`
 - `/categories`
 - `/budgets`
+
+Dashboard and Transactions synchronize `year` and `month` in the URL. Transactions use that calendar month by default; entering a custom date range temporarily overrides the month until the user returns to the selected period.
 
 ## Validation Rules Summary
 

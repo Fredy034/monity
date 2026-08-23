@@ -102,6 +102,7 @@ export function TransactionsManager() {
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const transactionsRequestIdRef = useRef(0);
 
   const filteredCategories = categories.filter((item) => item.type === type);
   const accountMap = useMemo(() => new Map(accounts.map((item) => [item.id, item])), [accounts]);
@@ -139,6 +140,7 @@ export function TransactionsManager() {
 
   const fetchTransactions = useCallback(
     async ({ cursor, reset }: { cursor?: string | null; reset: boolean }) => {
+      const requestId = ++transactionsRequestIdRef.current;
       if (reset) {
         setIsLoading(true);
       } else {
@@ -166,6 +168,7 @@ export function TransactionsManager() {
 
         const response = await fetch(`/api/transactions?${params.toString()}`);
         const payload = (await response.json()) as TransactionsPagePayload;
+        if (requestId !== transactionsRequestIdRef.current) return;
 
         if (!response.ok) {
           const message = payload.message ?? t('transactions.loadFailed');
@@ -181,9 +184,16 @@ export function TransactionsManager() {
         setTransactions((prev) => (reset ? nextBatch : appendWithoutDuplicates(prev, nextBatch)));
         setNextCursor(nextPageCursor);
         setHasMore(nextHasMore);
+      } catch {
+        if (requestId !== transactionsRequestIdRef.current) return;
+        const message = t('transactions.loadFailed');
+        setError(message);
+        addToast({ title: t('transactions.loadErrorTitle'), description: message, variant: 'error' });
       } finally {
-        setIsLoading(false);
-        setIsLoadingMore(false);
+        if (requestId === transactionsRequestIdRef.current) {
+          setIsLoading(false);
+          setIsLoadingMore(false);
+        }
       }
     },
     [addToast, dateWindow.fromDate, dateWindow.toDate, debouncedSearchQuery, filterCategoryId, filterType, maxAmount, minAmount, t],
