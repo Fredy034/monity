@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { cloneElement, type ReactElement, useEffect, useRef, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -75,9 +75,29 @@ type DashboardChartCopy = {
   noAccountExpenseData: string;
 };
 
-function ChartSlot({ className, children }: { className: string; children: React.ReactNode }) {
+const chartTooltipProps = {
+  contentStyle: {
+    backgroundColor: 'var(--color-bg-secondary)',
+    border: '1px solid var(--color-border-light)',
+    borderRadius: '12px',
+    boxShadow: '0 12px 32px rgba(15, 23, 42, 0.18)',
+    color: 'var(--color-text-primary)',
+  },
+  labelStyle: { color: 'var(--color-text-primary)', fontWeight: 600 },
+  itemStyle: { color: 'var(--color-text-secondary)' },
+};
+
+type ChartDimension = { width: number; height: number };
+
+function ChartSlot({
+  className,
+  children,
+}: {
+  className: string;
+  children: ReactElement<{ initialDimension?: ChartDimension }>;
+}) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const [ready, setReady] = useState(false);
+  const [initialDimension, setInitialDimension] = useState<ChartDimension | null>(null);
 
   useEffect(() => {
     const element = ref.current;
@@ -85,7 +105,8 @@ function ChartSlot({ className, children }: { className: string; children: React
 
     const updateSize = () => {
       const { width, height } = element.getBoundingClientRect();
-      setReady(width > 0 && height > 0);
+      if (width <= 0 || height <= 0) return;
+      setInitialDimension((current) => current ?? { width, height });
     };
 
     updateSize();
@@ -105,7 +126,7 @@ function ChartSlot({ className, children }: { className: string; children: React
 
   return (
     <div ref={ref} className={className}>
-      {ready ? children : null}
+      {initialDimension ? cloneElement(children, { initialDimension }) : null}
     </div>
   );
 }
@@ -147,7 +168,10 @@ export function CategorySpendingTrendChart({
               <CartesianGrid strokeDasharray='3 3' stroke='#e2e8f0' vertical={false} />
               <XAxis dataKey='month' tick={{ fill: '#475569', fontSize: 12 }} />
               <YAxis tick={{ fill: '#475569', fontSize: 12 }} tickFormatter={(value) => compactMoney(value)} />
-              <Tooltip formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })} />
+              <Tooltip
+                {...chartTooltipProps}
+                formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })}
+              />
               <Legend />
               {trend.series.map((series) => (
                 <Line
@@ -207,6 +231,7 @@ export function DashboardCharts({
                 <XAxis dataKey='month_label' tick={{ fill: '#475569', fontSize: 12 }} />
                 <YAxis tick={{ fill: '#475569', fontSize: 12 }} tickFormatter={(value) => compactMoney(value)} />
                 <Tooltip
+                  {...chartTooltipProps}
                   formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })}
                   labelFormatter={(label) => `${label} ${charts.selected_year}`}
                 />
@@ -241,6 +266,7 @@ export function DashboardCharts({
                 <XAxis dataKey='month_label' tick={{ fill: '#475569', fontSize: 12 }} />
                 <YAxis tick={{ fill: '#475569', fontSize: 12 }} tickFormatter={(value) => compactMoney(value)} />
                 <Tooltip
+                  {...chartTooltipProps}
                   formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })}
                   labelFormatter={(label) => `${label} ${charts.selected_year}`}
                 />
@@ -286,7 +312,10 @@ export function DashboardCharts({
                       <Cell key={entry.category_id} fill={entry.color || '#94A3B8'} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })} />
+                  <Tooltip
+                    {...chartTooltipProps}
+                    formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </ChartSlot>
@@ -349,7 +378,10 @@ export function DashboardCharts({
                   tick={{ fill: '#475569', fontSize: 12 }}
                   interval={0}
                 />
-                <Tooltip formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })} />
+                <Tooltip
+                  {...chartTooltipProps}
+                  formatter={(value: unknown) => formatMoney(Number(value), { locale, currency })}
+                />
                 <Bar dataKey='spent' name={copy.expenses} radius={[0, 8, 8, 0]} fill='#f97316' />
               </BarChart>
             </ResponsiveContainer>

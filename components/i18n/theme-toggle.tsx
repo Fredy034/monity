@@ -18,7 +18,7 @@ function ThemeToggleInner({ className }: { className?: string }) {
     <button
       type='button'
       onClick={toggleTheme}
-      className={`inline-flex items-center justify-center rounded-lg border border-slate-200 p-2 text-sm font-semibold text-slate-700 outline-none transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:bg-slate-800/80 ${className ?? ''}`}
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 outline-none transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:bg-slate-700 ${className ?? ''}`}
       aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
       title={theme === 'light' ? 'Dark mode' : 'Light mode'}
     >

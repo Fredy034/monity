@@ -5,12 +5,11 @@ import { createPortal } from 'react-dom';
 
 import { ActionButton } from '@/components/finance/action-button';
 import { DeleteConfirmDialog } from '@/components/finance/delete-confirm-dialog';
-import { PeriodNavigator } from '@/components/finance/period-navigator';
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
 import { useToast } from '@/components/ui/toast-provider';
 import { formatMoney } from '@/lib/finance/formatting';
-import { parseFinancePeriodParams, type FinancePeriod } from '@/lib/finance/period';
+import { canLoadMoreTransactions } from '@/lib/finance/transaction-pagination';
 import { resolveTransactionDateWindow } from '@/lib/finance/transaction-period';
 import { useTransactionExport } from '@/lib/finance/use-transaction-export';
 import { useI18n } from '@/lib/i18n/client';
@@ -67,13 +66,6 @@ export function TransactionsManager() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const currentPeriod = useMemo(() => {
-    const now = new Date();
-    return { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 };
-  }, []);
-  const [selectedPeriod, setSelectedPeriod] = useState<FinancePeriod>(currentPeriod);
-  const [hasLoadedPeriodFromUrl, setHasLoadedPeriodFromUrl] = useState(false);
-
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [accountId, setAccountId] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -103,6 +95,7 @@ export function TransactionsManager() {
   const [maxAmount, setMaxAmount] = useState('');
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const transactionsRequestIdRef = useRef(0);
+  const isResetPendingRef = useRef(false);
 
   const filteredCategories = categories.filter((item) => item.type === type);
   const accountMap = useMemo(() => new Map(accounts.map((item) => [item.id, item])), [accounts]);
@@ -112,12 +105,8 @@ export function TransactionsManager() {
     return categories.filter((category) => category.type === filterType);
   }, [categories, filterType]);
   const dateWindow = useMemo(
-    () => resolveTransactionDateWindow(selectedPeriod, { fromDate, toDate }),
-    [fromDate, selectedPeriod, toDate],
-  );
-  const availableYears = useMemo(
-    () => Array.from(new Set([selectedPeriod.year, ...Array.from({ length: 7 }, (_, index) => currentPeriod.year - 5 + index)])),
-    [currentPeriod.year, selectedPeriod.year],
+    () => resolveTransactionDateWindow({ fromDate, toDate }),
+    [fromDate, toDate],
   );
 
   const loadLookups = useCallback(async () => {
@@ -142,7 +131,12 @@ export function TransactionsManager() {
     async ({ cursor, reset }: { cursor?: string | null; reset: boolean }) => {
       const requestId = ++transactionsRequestIdRef.current;
       if (reset) {
+        isResetPendingRef.current = true;
         setIsLoading(true);
+        setIsLoadingMore(false);
+        setTransactions([]);
+        setNextCursor(null);
+        setHasMore(false);
       } else {
         setIsLoadingMore(true);
       }
@@ -156,8 +150,8 @@ export function TransactionsManager() {
         if (cursor) params.set('cursor', cursor);
         if (filterType !== 'all') params.set('type', filterType);
         if (filterCategoryId !== 'all') params.set('categoryId', filterCategoryId);
-        params.set('fromDate', dateWindow.fromDate);
-        params.set('toDate', dateWindow.toDate);
+        if (dateWindow.fromDate) params.set('fromDate', dateWindow.fromDate);
+        if (dateWindow.toDate) params.set('toDate', dateWindow.toDate);
         if (minAmount.trim()) params.set('minAmount', minAmount.trim());
         if (maxAmount.trim()) params.set('maxAmount', maxAmount.trim());
 
@@ -191,6 +185,7 @@ export function TransactionsManager() {
         addToast({ title: t('transactions.loadErrorTitle'), description: message, variant: 'error' });
       } finally {
         if (requestId === transactionsRequestIdRef.current) {
+          if (reset) isResetPendingRef.current = false;
           setIsLoading(false);
           setIsLoadingMore(false);
         }
@@ -198,19 +193,6 @@ export function TransactionsManager() {
     },
     [addToast, dateWindow.fromDate, dateWindow.toDate, debouncedSearchQuery, filterCategoryId, filterType, maxAmount, minAmount, t],
   );
-
-  useEffect(() => {
-    setSelectedPeriod(parseFinancePeriodParams(new URLSearchParams(window.location.search), currentPeriod));
-    setHasLoadedPeriodFromUrl(true);
-  }, [currentPeriod]);
-
-  useEffect(() => {
-    if (!hasLoadedPeriodFromUrl) return;
-    const params = new URLSearchParams(window.location.search);
-    params.set('year', String(selectedPeriod.year));
-    params.set('month', String(selectedPeriod.month));
-    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
-  }, [hasLoadedPeriodFromUrl, selectedPeriod]);
 
   useEffect(() => {
     void loadLookups();
@@ -221,7 +203,17 @@ export function TransactionsManager() {
   }, [fetchTransactions]);
 
   const loadMoreTransactions = useCallback(() => {
-    if (!hasMore || !nextCursor || isLoading || isLoadingMore) return;
+    if (
+      !canLoadMoreTransactions({
+        hasMore,
+        nextCursor,
+        isLoading,
+        isLoadingMore,
+        isResetPending: isResetPendingRef.current,
+      })
+    ) {
+      return;
+    }
     void fetchTransactions({ cursor: nextCursor, reset: false });
   }, [fetchTransactions, hasMore, isLoading, isLoadingMore, nextCursor]);
 
@@ -455,25 +447,28 @@ export function TransactionsManager() {
 
   return (
     <div className='space-y-6'>
-      <section className={`${financeUi.formCard} flex flex-wrap items-center justify-between gap-3`}>
-        <div>
-          <h2 className={financeUi.sectionTitle}>{t('transactions.selectedPeriod')}</h2>
-          <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{t('transactions.selectedPeriodDescription')}</p>
-        </div>
-        <PeriodNavigator
-          value={selectedPeriod}
-          availableYears={availableYears}
-          locale={locale}
-          onChange={setSelectedPeriod}
-        />
-      </section>
-
       <section className={financeUi.formCard}>
         <div className='flex flex-wrap items-center justify-between gap-2'>
-          <h2 className={financeUi.sectionTitle}>{t('transactions.addPanelTitle')}</h2>
-          <ActionButton type='button' variant='secondary' onClick={() => setIsAddPanelOpen((value) => !value)}>
-            {isAddPanelOpen ? t('transactions.hideAddPanel') : t('transactions.showAddPanel')}
-          </ActionButton>
+          <div>
+            <h2 className={financeUi.sectionTitle}>{t('transactions.actionsTitle')}</h2>
+            <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{t('transactions.actionsSubtitle')}</p>
+          </div>
+          <div className='flex flex-wrap gap-2'>
+            <ActionButton type='button' variant='secondary' onClick={() => setIsAddPanelOpen((value) => !value)}>
+              {isAddPanelOpen ? t('transactions.hideAddPanel') : t('transactions.showAddPanel')}
+            </ActionButton>
+            <ActionButton type='button' variant='secondary' onClick={() => setIsFiltersPanelOpen((value) => !value)}>
+              {isFiltersPanelOpen ? t('transactions.hideFiltersPanel') : t('transactions.showFiltersPanel')}
+            </ActionButton>
+            <ActionButton
+              type='button'
+              variant='secondary'
+              onClick={handleExport}
+              disabled={isExporting || transactions.length === 0}
+            >
+              {isExporting ? t('transactions.exporting') : t('transactions.exportPDF')}
+            </ActionButton>
+          </div>
         </div>
 
         {isAddPanelOpen ? (
@@ -553,33 +548,15 @@ export function TransactionsManager() {
             </div>
           </form>
         ) : null}
-      </section>
-
-      <section className={financeUi.formCard}>
-        <div className='flex flex-wrap items-center justify-between gap-2'>
-          <h2 className={financeUi.sectionTitle}>{t('transactions.filtersTitle')}</h2>
-          <div className='flex flex-wrap gap-2'>
-            {isFiltersPanelOpen ? (
+        {isFiltersPanelOpen ? (
+          <div className='mt-5 border-t border-slate-200 pt-5 dark:border-slate-700'>
+            <div className='mb-3 flex flex-wrap items-center justify-between gap-2'>
+              <h3 className={financeUi.sectionTitle}>{t('transactions.filtersTitle')}</h3>
               <ActionButton type='button' variant='secondary' onClick={clearFilters}>
                 {t('transactions.clearFilters')}
               </ActionButton>
-            ) : null}
-            <ActionButton type='button' variant='secondary' onClick={() => setIsFiltersPanelOpen((value) => !value)}>
-              {isFiltersPanelOpen ? t('transactions.hideFiltersPanel') : t('transactions.showFiltersPanel')}
-            </ActionButton>
-            <ActionButton
-              type='button'
-              variant='secondary'
-              onClick={handleExport}
-              disabled={isExporting || transactions.length === 0}
-            >
-              {isExporting ? t('transactions.exporting') : t('transactions.exportPDF')}
-            </ActionButton>
-          </div>
-        </div>
-
-        {isFiltersPanelOpen ? (
-          <div className='mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
+            </div>
+            <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
             <div className='xl:col-span-2'>
               <label className={financeUi.label}>{t('transactions.search')}</label>
               <input
@@ -674,6 +651,7 @@ export function TransactionsManager() {
                 value={maxAmount}
                 onChange={(event) => setMaxAmount(event.target.value)}
               />
+            </div>
             </div>
           </div>
         ) : null}

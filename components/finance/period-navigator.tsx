@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { StyledSelect } from '@/components/finance/styled-select';
 import { financeUi } from '@/components/finance/ui';
@@ -18,6 +18,7 @@ type PeriodNavigatorProps = {
 export function PeriodNavigator({ value, availableYears = [], locale, onChange }: PeriodNavigatorProps) {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const years = useMemo(
     () => Array.from(new Set([...availableYears, value.year])).sort((a, b) => b - a),
     [availableYears, value.year],
@@ -31,12 +32,31 @@ export function PeriodNavigator({ value, availableYears = [], locale, onChange }
     [locale],
   );
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsOpen(false);
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
   return (
-    <div className='relative'>
-      <div className='inline-flex h-11 items-center overflow-hidden rounded-xl bg-slate-950 text-white shadow-sm dark:bg-slate-100 dark:text-slate-950'>
+    <div ref={rootRef} className='relative'>
+      <div className='inline-flex h-11 items-center overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'>
         <button
           type='button'
-          className='flex h-full w-11 items-center justify-center transition hover:bg-white/10 dark:hover:bg-slate-200'
+          className='flex h-full w-11 items-center justify-center transition hover:bg-slate-100 dark:hover:bg-slate-700'
           aria-label={t('dashboard.previousMonth')}
           onClick={() => onChange(shiftFinancePeriod(value, -1))}
         >
@@ -44,7 +64,7 @@ export function PeriodNavigator({ value, availableYears = [], locale, onChange }
         </button>
         <button
           type='button'
-          className='h-full border-x border-white/20 px-4 text-sm font-medium capitalize dark:border-slate-300'
+          className='h-full border-x border-slate-200 px-4 text-sm font-medium capitalize hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700'
           aria-label={t('dashboard.choosePeriod')}
           aria-expanded={isOpen}
           onClick={() => setIsOpen((open) => !open)}
@@ -53,7 +73,7 @@ export function PeriodNavigator({ value, availableYears = [], locale, onChange }
         </button>
         <button
           type='button'
-          className='flex h-full w-11 items-center justify-center transition hover:bg-white/10 dark:hover:bg-slate-200'
+          className='flex h-full w-11 items-center justify-center transition hover:bg-slate-100 dark:hover:bg-slate-700'
           aria-label={t('dashboard.nextMonth')}
           onClick={() => onChange(shiftFinancePeriod(value, 1))}
         >
@@ -62,7 +82,7 @@ export function PeriodNavigator({ value, availableYears = [], locale, onChange }
       </div>
 
       {isOpen ? (
-        <div className={`${financeUi.formCard} absolute right-0 z-30 mt-2 w-72 shadow-xl`}>
+        <div className='absolute right-0 z-30 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:p-5'>
           <div className='grid grid-cols-2 gap-3'>
             <div>
               <label className={financeUi.label}>{t('dashboard.periodMonth')}</label>

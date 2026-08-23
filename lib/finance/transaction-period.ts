@@ -1,5 +1,3 @@
-import { financePeriodDateRange, type FinancePeriod } from './period.ts';
-
 export type CustomDateRange = {
   fromDate: string;
   toDate: string;
@@ -11,13 +9,12 @@ function isValidDateOnly(value: string) {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
-export function resolveTransactionDateWindow(period: FinancePeriod, customRange: CustomDateRange) {
-  const monthRange = financePeriodDateRange(period);
+export function resolveTransactionDateWindow(customRange: CustomDateRange) {
   const customFrom = isValidDateOnly(customRange.fromDate) ? customRange.fromDate : '';
   const customTo = isValidDateOnly(customRange.toDate) ? customRange.toDate : '';
   return {
-    fromDate: customFrom || monthRange.fromDate,
-    toDate: customTo || monthRange.toDate,
+    fromDate: customFrom,
+    toDate: customTo,
     isCustom: Boolean(customFrom || customTo),
   };
 }

@@ -33,7 +33,11 @@ export default async function RootLayout({
   const locale = await getRequestLocale();
 
   return (
-    <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang={locale}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
       <body className='min-h-full flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50'>
         <ThemeProvider>
           <ToastProvider>{children}</ToastProvider>

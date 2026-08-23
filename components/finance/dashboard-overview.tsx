@@ -392,27 +392,26 @@ export function DashboardOverview() {
 
   return (
     <div className='space-y-6'>
-      <div className={financeUi.formCard}>
-        <div className='flex flex-wrap items-center justify-between gap-2'>
-          <h2 className={financeUi.sectionTitle}>{t('dashboard.exportTitle')}</h2>
-          <button type='button' className={financeUi.secondaryButton} onClick={handleExport} disabled={isExporting}>
-            {isExporting ? t('dashboard.exporting') : t('dashboard.exportPDF')}
-          </button>
-        </div>
-      </div>
-
       <div className='space-y-6'>
         <section className={financeUi.formCard}>
           <div className='flex flex-wrap items-center justify-between gap-2'>
-            <h2 className={financeUi.sectionTitle}>{t('dashboard.quickAdd')}</h2>
-            <button
-              type='button'
-              className={financeUi.secondaryButton}
-              onClick={() => setIsQuickAddOpen((value) => !value)}
-              aria-expanded={isQuickAddOpen}
-            >
-              {isQuickAddOpen ? t('dashboard.hideQuickAdd') : t('dashboard.showQuickAdd')}
-            </button>
+            <div>
+              <h2 className={financeUi.sectionTitle}>{t('dashboard.actionsTitle')}</h2>
+              <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{t('dashboard.actionsSubtitle')}</p>
+            </div>
+            <div className='flex flex-wrap items-center gap-2'>
+              <button
+                type='button'
+                className={financeUi.secondaryButton}
+                onClick={() => setIsQuickAddOpen((value) => !value)}
+                aria-expanded={isQuickAddOpen}
+              >
+                {isQuickAddOpen ? t('dashboard.hideQuickAdd') : t('dashboard.showQuickAdd')}
+              </button>
+              <button type='button' className={financeUi.secondaryButton} onClick={handleExport} disabled={isExporting}>
+                {isExporting ? t('dashboard.exporting') : t('dashboard.exportPDF')}
+              </button>
+            </div>
           </div>
 
           {isQuickAddOpen ? (
@@ -522,12 +521,15 @@ export function DashboardOverview() {
 
         <section className={financeUi.formCard}>
           <div className='flex flex-wrap items-end justify-between gap-3'>
-            <PeriodNavigator
-              value={selectedPeriod}
-              availableYears={data.charts.available_years}
-              locale={locale}
-              onChange={setSelectedPeriod}
-            />
+            <div>
+              <label className={financeUi.label}>{t('dashboard.period')}</label>
+              <PeriodNavigator
+                value={selectedPeriod}
+                availableYears={data.charts.available_years}
+                locale={locale}
+                onChange={setSelectedPeriod}
+              />
+            </div>
             <div className='min-w-55 flex-[1.4]'>
               <label className={financeUi.label}>{t('dashboard.accountScope')}</label>
               <StyledSelect
