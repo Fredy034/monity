@@ -448,21 +448,22 @@ export function TransactionsManager() {
   return (
     <div className='space-y-6'>
       <section className={financeUi.formCard}>
-        <div className='flex flex-wrap items-center justify-between gap-2'>
-          <div>
+        <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+          <div className='min-w-0'>
             <h2 className={financeUi.sectionTitle}>{t('transactions.actionsTitle')}</h2>
             <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{t('transactions.actionsSubtitle')}</p>
           </div>
-          <div className='flex flex-wrap gap-2'>
-            <ActionButton type='button' variant='secondary' onClick={() => setIsAddPanelOpen((value) => !value)}>
+          <div className='grid w-full grid-cols-1 gap-2 min-[480px]:grid-cols-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end'>
+            <ActionButton className='w-full sm:w-auto' type='button' variant='secondary' onClick={() => setIsAddPanelOpen((value) => !value)}>
               {isAddPanelOpen ? t('transactions.hideAddPanel') : t('transactions.showAddPanel')}
             </ActionButton>
-            <ActionButton type='button' variant='secondary' onClick={() => setIsFiltersPanelOpen((value) => !value)}>
+            <ActionButton className='w-full sm:w-auto' type='button' variant='secondary' onClick={() => setIsFiltersPanelOpen((value) => !value)}>
               {isFiltersPanelOpen ? t('transactions.hideFiltersPanel') : t('transactions.showFiltersPanel')}
             </ActionButton>
             <ActionButton
               type='button'
               variant='secondary'
+              className='w-full min-[480px]:col-span-2 sm:w-auto'
               onClick={handleExport}
               disabled={isExporting || transactions.length === 0}
             >
@@ -673,7 +674,7 @@ export function TransactionsManager() {
         {transactions.map((tx) => (
           <article
             key={tx.id}
-            className={`${financeUi.listCard} flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}
+            className={`${financeUi.listCard} grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center`}
           >
             <div className='min-w-0'>
               <p className='font-semibold text-slate-900 dark:text-slate-100'>
@@ -687,8 +688,8 @@ export function TransactionsManager() {
                 />
               </div>
             </div>
-            <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-start'>
-              <p className={tx.type === 'income' ? 'font-semibold text-emerald-600' : 'font-semibold text-rose-600'}>
+            <div className='grid w-full grid-cols-2 items-center gap-2 sm:w-auto sm:grid-cols-[auto_auto_auto]'>
+              <p className={`col-span-2 text-lg font-semibold sm:col-span-1 sm:mr-2 sm:text-sm ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {tx.type === 'income' ? '+' : '-'}
                 {formatMoney(tx.amount, { locale, currency: accountMap.get(tx.account_id)?.currency })}
               </p>

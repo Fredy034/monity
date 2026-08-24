@@ -56,21 +56,31 @@ export function FinanceShell({
     <main className={financeUi.shellBackground}>
       <div className='mx-auto w-full max-w-7xl'>
         <section className={`${financeUi.panel} min-w-0`}>
-          <div className='flex items-center justify-between gap-4 border-b border-slate-200 pb-4 dark:border-slate-700'>
-            <Image
-              src='/monity-logo_black.png'
-              alt={t('common.appName')}
-              width={180}
-              height={24}
-              priority
-              className='h-auto w-36 dark:brightness-0 dark:invert'
-            />
-            <div className='flex h-10 items-center gap-2'>
+          <div className='flex min-w-0 items-center justify-between gap-2 border-b border-slate-200 pb-4 dark:border-slate-700 sm:gap-4'>
+            <div className='flex shrink-0 items-center'>
+              <Image
+                src='/monity-icon.png'
+                alt={t('common.appName')}
+                width={40}
+                height={40}
+                priority
+                className='h-10 w-10 object-contain sm:hidden dark:brightness-0 dark:invert'
+              />
+              <Image
+                src='/monity-logo_black.png'
+                alt={t('common.appName')}
+                width={180}
+                height={24}
+                priority
+                className='hidden h-auto w-36 sm:block dark:brightness-0 dark:invert'
+              />
+            </div>
+            <div className='flex min-w-0 h-10 items-center gap-1.5 sm:gap-2'>
               <LanguageSwitcher className='dark:text-slate-300' />
               <ThemeToggle className='lg:mr-1' />
               <button
                 type='button'
-                className='lg:ml-1 inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-100 lg:hidden'
+                className='inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-100 sm:px-3 lg:ml-1 lg:hidden'
                 onClick={() => setIsSidebarOpen(true)}
                 aria-label={t('nav.openNavigation')}
               >

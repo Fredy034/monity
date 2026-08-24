@@ -394,21 +394,26 @@ export function DashboardOverview() {
     <div className='space-y-6'>
       <div className='space-y-6'>
         <section className={financeUi.formCard}>
-          <div className='flex flex-wrap items-center justify-between gap-2'>
-            <div>
+          <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+            <div className='min-w-0'>
               <h2 className={financeUi.sectionTitle}>{t('dashboard.actionsTitle')}</h2>
               <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{t('dashboard.actionsSubtitle')}</p>
             </div>
-            <div className='flex flex-wrap items-center gap-2'>
+            <div className='grid w-full grid-cols-1 gap-2 min-[480px]:grid-cols-2 sm:w-auto'>
               <button
                 type='button'
-                className={financeUi.secondaryButton}
+                className={`${financeUi.secondaryButton} w-full sm:w-auto`}
                 onClick={() => setIsQuickAddOpen((value) => !value)}
                 aria-expanded={isQuickAddOpen}
               >
                 {isQuickAddOpen ? t('dashboard.hideQuickAdd') : t('dashboard.showQuickAdd')}
               </button>
-              <button type='button' className={financeUi.secondaryButton} onClick={handleExport} disabled={isExporting}>
+              <button
+                type='button'
+                className={`${financeUi.secondaryButton} w-full sm:w-auto`}
+                onClick={handleExport}
+                disabled={isExporting}
+              >
                 {isExporting ? t('dashboard.exporting') : t('dashboard.exportPDF')}
               </button>
             </div>
@@ -666,7 +671,10 @@ export function DashboardOverview() {
                 <div className={financeUi.emptyState}>{t('dashboard.noRecentTransactions')}</div>
               ) : null}
               {data.recent_transactions.map((item) => (
-                <div key={item.id} className={financeUi.listRow}>
+                <div
+                  key={item.id}
+                  className='grid min-w-0 gap-3 rounded-xl border border-slate-200 bg-linear-to-r from-white to-slate-50/80 px-3 py-3 text-sm dark:border-slate-700 dark:from-slate-800/60 dark:to-slate-800/35 min-[420px]:grid-cols-[minmax(0,1fr)_auto] min-[420px]:items-center'
+                >
                   <div className='min-w-0'>
                     <p className='font-medium text-slate-900 dark:text-slate-100'>
                       {item.description || t('dashboard.noDescription')}
@@ -680,7 +688,7 @@ export function DashboardOverview() {
                     </div>
                   </div>
                   <span
-                    className={`max-w-full text-right break-all ${item.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}
+                    className={`max-w-full break-all font-semibold min-[420px]:text-right ${item.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}
                   >
                     {item.type === 'income' ? '+' : '-'}
                     {formatMoney(item.amount, {
