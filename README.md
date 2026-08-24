@@ -221,6 +221,7 @@ NEXT_PUBLIC_INSFORGE_ANON_KEY=your-anon-key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 OPENROUTER_API_KEY=your-server-only-openrouter-key
 OPENROUTER_CHAT_MODEL=openai/gpt-4o
+INSFORGE_API_KEY=your-server-only-project-admin-key
 ```
 
 Supported aliases in code:
@@ -229,6 +230,7 @@ Supported aliases in code:
 - Anon key: `NEXT_PUBLIC_INSFORGE_ANON_KEY` or `INSFORGE_ANON_KEY`
 - App URL: `NEXT_PUBLIC_APP_URL` or `APP_URL`
 - Optional AI insights: `OPENROUTER_API_KEY` and `OPENROUTER_CHAT_MODEL` remain server-only and must never use a `NEXT_PUBLIC_` prefix.
+- The recurring scheduler requires the server-only `INSFORGE_API_KEY`; never expose it through a `NEXT_PUBLIC_` variable.
 
 ## Setup and Run
 

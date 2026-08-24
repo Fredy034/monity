@@ -12,7 +12,7 @@
     "deploy": "pnpm build && pnpm run deploy:run"
   },
   "dependencies": {
-    "@insforge/sdk": "^1.2.4",
+    "@insforge/sdk": "^1.5.2",
     "date-fns": "^4.1.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",

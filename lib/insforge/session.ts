@@ -1,6 +1,7 @@
 import type { UserSchema } from '@insforge/sdk';
 
 import { createServerInsForgeClient } from './client';
+import { isUserProfileActive, synchronizeUserProfile } from './session-policy';
 
 export const AUTH_ACCESS_COOKIE = 'monity_access_token';
 export const AUTH_REFRESH_COOKIE = 'monity_refresh_token';
@@ -91,6 +92,10 @@ export async function getResolvedSession(options: {
     if (!error && data.user) {
       const profile = await getUserProfile(accessToken, data.user.id);
 
+      if (!isUserProfileActive(profile)) {
+        return null;
+      }
+
       return {
         user: mapUser(data.user, profile),
         accessToken,
@@ -113,6 +118,10 @@ export async function getResolvedSession(options: {
   }
 
   const profile = await getUserProfile(data.accessToken, data.user.id);
+
+  if (!isUserProfileActive(profile)) {
+    return null;
+  }
 
   return {
     user: mapUser(data.user, profile),
@@ -149,27 +158,13 @@ export async function upsertUserProfile(session: {
 }): Promise<UserProfileRow | null> {
   const client = createServerInsForgeClient(session.accessToken);
   const now = new Date().toISOString();
-  const { data, error } = await client.database
-    .from('user_profiles')
-    .upsert(
-      [
-        {
-          user_id: session.user.id,
-          email: session.user.email,
-          display_name: session.user.profile?.name ?? null,
-          status: 'active',
-          last_login_at: now,
-          updated_at: now,
-        },
-      ],
-      { onConflict: 'user_id' },
-    )
-    .select('user_id, email, display_name, status, last_login_at, created_at, updated_at')
-    .single();
+  const profileFields = {
+    email: session.user.email,
+    display_name: session.user.profile?.name ?? null,
+    last_login_at: now,
+    updated_at: now,
+  };
 
-  if (error || !data) {
-    return null;
-  }
-
-  return data as UserProfileRow;
+  const profile = await synchronizeUserProfile(client, session.user.id, profileFields);
+  return profile as UserProfileRow | null;
 }

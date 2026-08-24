@@ -1,4 +1,4 @@
-import { createClient } from '@insforge/sdk';
+import { createAdminClient, createClient } from '@insforge/sdk';
 
 function normalizeAbsoluteHttpUrl(value: string, variableName: string) {
   const trimmed = value.trim();
@@ -54,6 +54,17 @@ export function createServerInsForgeClient(accessToken?: string | null) {
     isServerMode: true,
     edgeFunctionToken: accessToken ?? undefined,
   });
+}
+
+export function createAdminInsForgeClient() {
+  const { baseUrl } = assertInsForgeConfig();
+  const apiKey = process.env.INSFORGE_API_KEY?.trim();
+
+  if (!apiKey) {
+    throw new Error('Missing INSFORGE_API_KEY for privileged server operations.');
+  }
+
+  return createAdminClient({ baseUrl, apiKey });
 }
 
 export function getAppUrl() {

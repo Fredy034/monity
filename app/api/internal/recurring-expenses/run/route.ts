@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { applyRecurringForAllUsers, currentExecutionTime } from '@/lib/finance/recurring';
 import { jsonError } from '@/lib/insforge/api';
-import { createServerInsForgeClient } from '@/lib/insforge/client';
+import { createAdminInsForgeClient } from '@/lib/insforge/client';
 
 function resolveCronToken(request: Request) {
   const headerToken = request.headers.get('x-cron-token');
@@ -24,7 +24,12 @@ export async function POST(request: Request) {
     return jsonError(401, 'UNAUTHORIZED', 'Missing or invalid cron token.');
   }
 
-  const client = createServerInsForgeClient();
+  let client: ReturnType<typeof createAdminInsForgeClient>;
+  try {
+    client = createAdminInsForgeClient();
+  } catch {
+    return jsonError(503, 'RECURRING_ADMIN_NOT_CONFIGURED', 'Recurring scheduler credentials are not configured.');
+  }
   const executionTime = currentExecutionTime();
 
   const { data, error } = await applyRecurringForAllUsers(client, executionTime);

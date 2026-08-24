@@ -4,6 +4,7 @@ import { getErrorMessage, jsonError, readJsonBody } from '@/lib/insforge/api';
 import { createServerInsForgeClient } from '@/lib/insforge/client';
 import { persistSessionCookies } from '@/lib/insforge/cookies';
 import { upsertUserProfile } from '@/lib/insforge/session';
+import { isUserProfileActive } from '@/lib/insforge/session-policy';
 
 type LoginPayload = {
   email?: string;
@@ -37,6 +38,19 @@ export async function POST(request: Request) {
     return jsonError(error?.statusCode ?? 401, error?.error ?? 'INVALID_CREDENTIALS', message);
   }
 
+  const profile = await upsertUserProfile({
+    accessToken: data.accessToken,
+    user: data.user,
+  });
+
+  if (!profile) {
+    return jsonError(500, 'PROFILE_SYNC_FAILED', 'Could not initialize the application profile.');
+  }
+
+  if (!isUserProfileActive(profile)) {
+    return jsonError(403, 'ACCOUNT_INACTIVE', 'This account is inactive.');
+  }
+
   const response = NextResponse.json(
     {
       user: data.user,
@@ -48,11 +62,6 @@ export async function POST(request: Request) {
   persistSessionCookies(response, {
     accessToken: data.accessToken,
     refreshToken: data.refreshToken ?? null,
-  });
-
-  await upsertUserProfile({
-    accessToken: data.accessToken,
-    user: data.user,
   });
 
   return response;

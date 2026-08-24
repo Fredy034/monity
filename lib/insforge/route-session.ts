@@ -5,6 +5,7 @@ import { jsonError } from './api';
 import { createServerInsForgeClient } from './client';
 import { persistSessionCookies } from './cookies';
 import { type ResolvedSession, getResolvedSessionFromCookies } from './session';
+import { isSessionActive } from './session-policy';
 
 export type ApiSessionContext = {
   session: ResolvedSession;
@@ -21,6 +22,13 @@ export async function getApiSessionContext(): Promise<
     return {
       ok: false,
       response: jsonError(401, 'UNAUTHENTICATED', 'You must be signed in to access this resource.'),
+    };
+  }
+
+  if (!isSessionActive(session)) {
+    return {
+      ok: false,
+      response: jsonError(403, 'ACCOUNT_INACTIVE', 'This account is inactive.'),
     };
   }
 

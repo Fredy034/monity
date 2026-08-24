@@ -6,6 +6,7 @@ import {
   containsProhibitedAiFields,
   parseAiInsightResponse,
 } from '../../lib/finance/ai-insights.ts';
+import * as aiInsights from '../../lib/finance/ai-insights.ts';
 
 test('builds an anonymized allowlisted AI payload', () => {
   const source = {
@@ -63,4 +64,59 @@ test('validates and bounds structured AI output', () => {
 
 test('rejects malformed AI output', () => {
   assert.throws(() => parseAiInsightResponse({ summary: '', observations: [] }), /valid summary/i);
+});
+
+test('denies AI analysis when the durable quota RPC rejects the request', async () => {
+  const consumeAiInsightQuota = (aiInsights as Record<string, unknown>).consumeAiInsightQuota;
+  assert.equal(typeof consumeAiInsightQuota, 'function');
+
+  const calls: Array<{ functionName: string; params: Record<string, unknown> }> = [];
+  const client = {
+    database: {
+      rpc: async (functionName: string, params: Record<string, unknown>) => {
+        calls.push({ functionName, params });
+        return {
+          data: [{ allowed: false, remaining: 0, reset_at: '2026-08-24T02:00:00.000Z' }],
+          error: null,
+        };
+      },
+    },
+  };
+
+  const result = await (consumeAiInsightQuota as (client: unknown, userId: string) => Promise<unknown>)(client, 'user-1');
+
+  assert.deepEqual(calls, [
+    {
+      functionName: 'consume_ai_insight_quota',
+      params: { p_user_id: 'user-1' },
+    },
+  ]);
+  assert.deepEqual(result, {
+    allowed: false,
+    remaining: 0,
+    resetAt: '2026-08-24T02:00:00.000Z',
+    error: null,
+  });
+});
+
+test('preserves an allowed AI quota result for normal requests', async () => {
+  const consumeAiInsightQuota = (aiInsights as Record<string, unknown>).consumeAiInsightQuota;
+  assert.equal(typeof consumeAiInsightQuota, 'function');
+
+  const client = {
+    database: {
+      rpc: async () => ({
+        data: [{ allowed: true, remaining: 9, reset_at: '2026-08-24T02:00:00.000Z' }],
+        error: null,
+      }),
+    },
+  };
+
+  const result = await (consumeAiInsightQuota as (client: unknown, userId: string) => Promise<unknown>)(client, 'user-1');
+  assert.deepEqual(result, {
+    allowed: true,
+    remaining: 9,
+    resetAt: '2026-08-24T02:00:00.000Z',
+    error: null,
+  });
 });

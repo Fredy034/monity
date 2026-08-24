@@ -4,6 +4,7 @@ import { getErrorMessage, jsonError, readJsonBody } from '@/lib/insforge/api';
 import { createServerInsForgeClient, getAppUrl } from '@/lib/insforge/client';
 import { persistSessionCookies } from '@/lib/insforge/cookies';
 import { upsertUserProfile } from '@/lib/insforge/session';
+import { isUserProfileActive } from '@/lib/insforge/session-policy';
 
 type RegisterPayload = {
   email?: string;
@@ -54,14 +55,22 @@ export async function POST(request: Request) {
   );
 
   if (data.accessToken && data.user) {
+    const profile = await upsertUserProfile({
+      accessToken: data.accessToken,
+      user: data.user,
+    });
+
+    if (!profile) {
+      return jsonError(500, 'PROFILE_SYNC_FAILED', 'Could not initialize the application profile.');
+    }
+
+    if (!isUserProfileActive(profile)) {
+      return jsonError(403, 'ACCOUNT_INACTIVE', 'This account is inactive.');
+    }
+
     persistSessionCookies(response, {
       accessToken: data.accessToken,
       refreshToken: data.refreshToken ?? null,
-    });
-
-    await upsertUserProfile({
-      accessToken: data.accessToken,
-      user: data.user,
     });
   }
 

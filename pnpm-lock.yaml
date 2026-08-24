@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@insforge/sdk':
-        specifier: ^1.2.4
-        version: 1.2.4(supports-color@7.2.0)
+        specifier: ^1.5.2
+        version: 1.5.2(supports-color@7.2.0)
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -354,12 +354,12 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@insforge/sdk@1.2.4':
-    resolution: {integrity: sha512-UK7s+92VWvE3xFVL59iqjEhFM3/Dw/g04oV6VZuQt7Lhgt2HN4HYyJHVTTzps2vzydrwGlOVvqdqTyZHR5WqOw==}
+  '@insforge/sdk@1.5.2':
+    resolution: {integrity: sha512-/Wpv0T/4wczJWsPnKgKpKgVUZdcwwQk6pWjOl3zIrvImO/pVy+T3TfgPbnuD5e8szEPiLXBJWDg6ywd2V0vgMQ==}
     engines: {node: '>=18'}
 
-  '@insforge/shared-schemas@1.1.47':
-    resolution: {integrity: sha512-lwx7ymV41l7QzqIWkZ81SnZKvudqqy0FchAiBOHp5dea37g/HCMcPxfHV/B89xY4GKLkWjF1P2Nwh58PKv7OHA==}
+  '@insforge/shared-schemas@1.2.1':
+    resolution: {integrity: sha512-3DCfzmlyH8t0NEjXZmI4/J7W6eaTsSa72K89WWeTDnnPtaPoFHJVSS8lTLsi0p3KFkA8gU6e5IOZemSi5TDW1g==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -2561,9 +2561,9 @@ snapshots:
   '@img/sharp-win32-x64@0.34.5':
     optional: true
 
-  '@insforge/sdk@1.2.4(supports-color@7.2.0)':
+  '@insforge/sdk@1.5.2(supports-color@7.2.0)':
     dependencies:
-      '@insforge/shared-schemas': 1.1.47
+      '@insforge/shared-schemas': 1.2.1
       '@supabase/postgrest-js': 1.21.4
       socket.io-client: 4.8.3(supports-color@7.2.0)
     transitivePeerDependencies:
@@ -2571,7 +2571,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@insforge/shared-schemas@1.1.47':
+  '@insforge/shared-schemas@1.2.1':
     dependencies:
       zod: 3.25.76
 

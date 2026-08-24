@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerInsForgeClient, getAppUrl } from '@/lib/insforge/client';
 import { clearOAuthVerifierCookie, clearSessionCookies, persistSessionCookies } from '@/lib/insforge/cookies';
 import { AUTH_OAUTH_VERIFIER_COOKIE, upsertUserProfile } from '@/lib/insforge/session';
+import { isUserProfileActive } from '@/lib/insforge/session-policy';
 
 export async function GET(request: NextRequest) {
   const appUrl = getAppUrl();
@@ -33,10 +34,17 @@ export async function GET(request: NextRequest) {
     return clearSessionCookies(response);
   }
 
-  await upsertUserProfile({
+  const profile = await upsertUserProfile({
     accessToken: data.accessToken,
     user: data.user,
   });
+
+  if (!profile || !isUserProfileActive(profile)) {
+    const errorCode = profile ? 'account_inactive' : 'profile_sync_failed';
+    const response = NextResponse.redirect(new URL(`/sign-in?error=${errorCode}`, appUrl));
+    clearOAuthVerifierCookie(response);
+    return clearSessionCookies(response);
+  }
 
   const response = NextResponse.redirect(new URL('/dashboard', appUrl));
   clearOAuthVerifierCookie(response);

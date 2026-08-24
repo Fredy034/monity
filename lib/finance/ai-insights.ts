@@ -43,6 +43,40 @@ export type AiInsightResult = {
   observations: Array<{ title: string; explanation: string; action: string }>;
 };
 
+type AiQuotaClient = {
+  database: {
+    rpc: (
+      functionName: string,
+      params: { p_user_id: string },
+    ) => PromiseLike<{
+      data: Array<{ allowed: boolean; remaining: number; reset_at: string }> | null;
+      error: { message: string } | null;
+    }>;
+  };
+};
+
+export async function consumeAiInsightQuota(client: AiQuotaClient, userId: string) {
+  const { data, error } = await client.database.rpc('consume_ai_insight_quota', {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    return { allowed: false, remaining: 0, resetAt: null, error: new Error(error.message) };
+  }
+
+  const quota = data?.[0];
+  if (!quota || typeof quota.allowed !== 'boolean') {
+    return { allowed: false, remaining: 0, resetAt: null, error: new Error('Invalid AI quota response.') };
+  }
+
+  return {
+    allowed: quota.allowed,
+    remaining: Number(quota.remaining),
+    resetAt: quota.reset_at,
+    error: null,
+  };
+}
+
 const PROHIBITED_KEYS = new Set(
   [
     'description',

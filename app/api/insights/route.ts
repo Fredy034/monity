@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { buildDashboardComparisons } from '@/lib/finance/dashboard-analytics';
 import {
   buildAiInsightPayload,
+  consumeAiInsightQuota,
   containsProhibitedAiFields,
   parseAiInsightResponse,
 } from '@/lib/finance/ai-insights';
@@ -114,6 +115,26 @@ export async function POST(request: Request) {
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return jsonError(503, 'AI_NOT_CONFIGURED', 'Deeper analysis is not configured yet.');
+
+  const quota = await consumeAiInsightQuota(client, session.user.id);
+  if (quota.error) {
+    return jsonError(503, 'AI_QUOTA_UNAVAILABLE', 'Could not verify the AI analysis quota.');
+  }
+
+  if (!quota.allowed) {
+    const retryAfterSeconds = quota.resetAt
+      ? Math.max(1, Math.ceil((new Date(quota.resetAt).getTime() - Date.now()) / 1000))
+      : 3600;
+    return NextResponse.json(
+      {
+        error: 'AI_QUOTA_EXCEEDED',
+        message: 'AI analysis limit reached. Try again after the current hourly window.',
+        statusCode: 429,
+        resetAt: quota.resetAt,
+      },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSeconds) } },
+    );
+  }
 
   try {
     const openai = new OpenAI({ baseURL: 'https://openrouter.ai/api/v1', apiKey });
